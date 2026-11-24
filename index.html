@@ -225,7 +225,7 @@ function screenLogin(msg){
     <h1>Day 1부터<br>하루 30단어씩</h1>
     <p class="mute">수능 영단어 ${WORDS.length.toLocaleString()}개 · ${DAYS} Day. 기록은 서버에 자동 저장돼서 어느 폰에서든 이름과 비밀번호로 이어서 할 수 있어요.</p>
     <form id="f" style="margin-top:16px">
-    <label class="mute" for="nm">이름</label><input type="text" id="nm" maxlength="20" placeholder="예: 송윤하" autocomplete="username" style="margin:6px 0 12px">
+    <label class="mute" for="nm">이름</label><input type="text" id="nm" maxlength="20" placeholder="예: 달쌤" autocomplete="username" style="margin:6px 0 12px">
     <label class="mute" for="pw">비밀번호 (숫자 4자리)</label><input type="password" id="pw" class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="current-password" placeholder="····" style="margin:6px 0 12px">
     <p class="note" id="lm" style="text-align:left;color:var(--ng);margin:0 0 10px">${msg?esc(msg):''}</p>
     <button class="btn" id="lb">시작하기</button></form>
