@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>달터디 수능 영단어</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm study tool, quiet and focused, one word at a time
+   IDEA: a stack of index cards from a vocab ring — one card on the desk
+   PICTURE: the current card itself, large English word set in serif
+   COLOUR: white paper, ink, one indigo accent; green/red only for marks
+   TYPE: Source Serif 4 for English headwords, Noto Sans KR for everything else
+   LAYOUT: single centered column, max 560px, card at the top of each screen */
+:root{color-scheme:light dark;
+--bg:light-dark(#f3f4f6,#0f1013);--card:light-dark(#ffffff,#1a1c21);--ink:light-dark(#121418,#eceef2);
+--mute:light-dark(#646a75,#9aa1ad);--line:light-dark(#e2e4e9,#2a2d34);--acc:light-dark(#3b3fd8,#8f93ff);
+--acc-ink:light-dark(#ffffff,#0f1013);--ok:light-dark(#14804f,#4cc98a);--ng:light-dark(#cf2e2e,#ff6b6b);
+--okbg:light-dark(#e7f6ee,#15291f);--ngbg:light-dark(#fdecec,#2e1717)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans KR",system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:560px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.brand{font:900 17px "Noto Sans KR",sans-serif;letter-spacing:-.01em;background:none;border:0;padding:8px 0;color:var(--ink);cursor:pointer}
+.hr{display:flex;gap:14px;align-items:center}
+.sync{font-size:12px;color:var(--ok)}.sync[data-s=offline],.sync[data-s=err]{color:var(--ng)}.sync[data-s=saving]{color:var(--mute)}
+@media(max-width:400px){.sync{display:none}}
+.pin{letter-spacing:.4em;font-size:22px!important;text-align:center}
+.back{background:none;border:0;color:var(--acc);font:700 15px "Noto Sans KR",sans-serif;padding:10px 0;margin:-6px 0 8px;cursor:pointer;min-height:44px}
+.wb-row{display:flex;justify-content:space-between;align-items:center;gap:8px;grid-column:2;margin-top:6px}
+.star{background:none;border:0;font-size:22px;line-height:1;color:var(--mute);cursor:pointer;padding:4px 6px;vertical-align:middle;min-width:36px;min-height:36px}
+.star.on{color:#e0a000}
+.cnt.own{color:var(--acc);background:var(--bg)}
+.cnt{font-size:12px;font-weight:700;color:var(--ng);background:var(--ngbg);border-radius:20px;padding:3px 9px}
+.mini{min-height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:500 14px "Noto Sans KR",sans-serif;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:14px;padding:12px 16px;display:flex;gap:14px;align-items:center;font-size:15px;z-index:9;max-width:92vw}
+.toast button{background:none;border:0;color:var(--acc);font:700 15px "Noto Sans KR",sans-serif;cursor:pointer;filter:brightness(1.6)}
+.help h2{margin-top:22px}.help h2:first-of-type{margin-top:0}.help ul{margin:0;padding-left:20px}.help li{margin:4px 0}
+.brand span{color:var(--acc)}
+.who{font-size:14px;color:var(--mute);background:none;border:0;padding:8px 0;cursor:pointer;font-family:inherit}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 1px 0 var(--line),0 10px 30px -18px rgba(0,0,0,.25)}
+.card+.card,.card+.row,.row+.card{margin-top:14px}
+h1{font-size:clamp(28px,7vw,36px);line-height:1.1;margin:0 0 8px;text-wrap:balance}
+h2{font-size:19px;margin:0 0 10px}
+p{margin:0 0 10px}.mute{color:var(--mute);font-size:14px}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border-radius:14px;border:0;background:var(--acc);color:var(--acc-ink);font:700 17px "Noto Sans KR",sans-serif;cursor:pointer;padding:0 16px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:15px;min-height:46px}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,input:focus-visible,.who:focus-visible,.day:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+input[type=text],textarea{width:100%;font:16px "Noto Sans KR",sans-serif;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+textarea{min-height:96px;font-size:13px;resize:vertical;word-break:break-all}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.stat{background:var(--bg);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-size:22px;line-height:1.2}.stat small{color:var(--mute);font-size:13px}
+.bar{height:8px;border-radius:9px;background:var(--line);overflow:hidden;margin:6px 0 4px}.bar i{display:block;height:100%;background:var(--acc);border-radius:9px}
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin-top:10px}
+.day{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--mute);font:500 14px "Noto Sans KR",sans-serif;cursor:pointer}
+.day.done{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.day.next{border:2px solid var(--acc);color:var(--acc);font-weight:700}
+.day:disabled{cursor:default;opacity:.55}
+.words{list-style:none;margin:0;padding:0}
+.words li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.words li:last-child{border-bottom:0}
+.words .n{color:var(--mute);font-size:13px;padding-top:4px;text-align:right}
+.en{font:700 21px/1.2 "Source Serif 4",Georgia,serif;overflow-wrap:anywhere}
+.ko{grid-column:2;color:var(--ink);font-size:15px}
+.hide .ko{color:transparent;background:var(--line);border-radius:6px;user-select:none}
+.hide li.show .ko{color:var(--ink);background:none}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--bg);color:var(--mute)}
+.tag.new{color:var(--acc)}.tag.rev{color:var(--ng)}
+.qword{font:700 clamp(38px,11vw,54px)/1.1 "Source Serif 4",Georgia,serif;text-align:center;margin:28px 0 30px;overflow-wrap:anywhere}
+.qtop{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--mute)}
+.hint{font-size:13px;color:var(--mute);margin:8px 2px 14px}
+.fb{border-radius:12px;padding:14px;margin:12px 0}
+.fb.ok{background:var(--okbg)}.fb.ng{background:var(--ngbg)}
+.fb strong{display:block;font-size:17px;margin-bottom:2px}.fb.ok strong{color:var(--ok)}.fb.ng strong{color:var(--ng)}
+.fb .mine{font-size:14px;color:var(--mute)}
+.res-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:12px}
+.big{font-size:44px;font-weight:900;line-height:1}
+.wrong li{cursor:default;grid-template-columns:minmax(0,1fr)}.wrong .ko{grid-column:1}
+.wrong .en{font-size:18px}
+.pr{font:400 14px "Noto Sans KR",sans-serif;color:var(--mute);margin-left:4px}
+.qpr{text-align:center;color:var(--mute);font-size:16px;margin:-20px 0 24px}
+.exs{grid-column:2;font-size:14px;line-height:1.5;color:var(--ink);display:none;margin-top:4px}
+.words li.show .exs,.words:not(.hide) li .exs{display:block}
+.ex{background:var(--bg);border-radius:12px;padding:12px 14px;margin:0 0 10px}
+.ex-en{font:500 17px/1.45 "Source Serif 4",Georgia,serif}
+.ex-en b,.exs b{color:var(--acc)}
+.ex-ko{font-size:14px;color:var(--mute);margin-top:4px}
+.note-box{border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;margin:0 0 12px}
+.note-box span{display:inline-block;font-weight:700;color:var(--ng);margin-right:8px}
+.note{font-size:13px;color:var(--mute);text-align:center;margin-top:10px}
+.warn{background:var(--ngbg);color:var(--ng);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{min-height:44px;padding:0 16px;border-radius:22px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 15px "Noto Sans KR",sans-serif;cursor:pointer}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.links .btn{flex:1 1 140px;width:auto}
+@media(prefers-reduced-motion:no-preference){.pop{animation:pop .22s ease-out}@keyframes pop{from{transform:translateY(6px);opacity:0}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><button class="brand" id="brand">달터디 <span>수능 영단어</span></button><div class="hr"><span class="sync" id="sync"></span><button class="who" id="help">사용법</button><button class="who" id="who" hidden></button></div></header>
+<div id="warn"></div>
+<main id="app"></main>
+</div>
+<script src="config.js"></script>
+<script>
+{
+let WORDS = [], DSTART = [], DAYS = 0;
+const REVIEW = 20, MAX_PER_DAY = 2, FAV_MAX = 8;
+const INTERVAL = [1, 1, 3, 7, 14, 30];
+const KEY = 'dalvoca:v2';
+const app = document.getElementById('app');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- storage + cloud ---------- */
+const KEY_C='daltudy:v1';
+let storageOk=true, memStore=null;
+function load(){ try { return JSON.parse(localStorage.getItem(KEY_C)) || {profiles:{}, current:null}; } catch(e){ storageOk=false; return memStore || {profiles:{}, current:null}; } }
+function persist(){ try { localStorage.setItem(KEY_C, JSON.stringify(db)); } catch(e){ storageOk=false; memStore=db; } }
+let db = load();
+const CFG = window.DAL_CONFIG || {};
+let ver=0, syncing=false, syncTimer=null;
+function save(){ ver++; if(db.auth){ db.dirty=true; } persist(); if(db.auth) schedule(1500); }
+function schedule(ms){ clearTimeout(syncTimer); syncTimer=setTimeout(syncNow, ms); }
+async function rpc(fn, args){
+  const h={'apikey':CFG.key,'Content-Type':'application/json'}; if(/^eyJ/.test(CFG.key||'')) h.Authorization='Bearer '+CFG.key;
+  const r=await fetch(CFG.url.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(args)});
+  if(!r.ok) throw new Error('http '+r.status); return r.json();
+}
+function setStatus(s){ const el=document.getElementById('sync'); if(!el) return; const m={ok:'✓ 저장됨',saving:'저장 중…',offline:'오프라인 · 연결되면 저장',err:'저장 오류'}; el.textContent=db.auth?(m[s]||''):''; el.dataset.s=s; }
+function mergeP(a,b){
+  if(!b || !b.srs) return a; if(!a || !a.srs) return b;
+  const o=JSON.parse(JSON.stringify(a));
+  o.next=Math.max(a.next||1,b.next||1); o.created=Math.min(a.created||today(),b.created||today());
+  for(const [k,v] of Object.entries(b.srs||{})){ const x=o.srs[k]; if(!x || (v.w+v.c)>(x.w+x.c) || ((v.w+v.c)===(x.w+x.c) && (v.seen||0)>(x.seen||0))) o.srs[k]=v; }
+  o.log=o.log||{}; for(const [k,v] of Object.entries(b.log||{})) o.log[k]=Math.max(o.log[k]||0,v);
+  o.results=o.results||{}; for(const [k,v] of Object.entries(b.results||{})) if(!o.results[k]) o.results[k]=v;
+  o.wb=o.wb||{}; for(const [k,v] of Object.entries(b.wb||{})){ const x=o.wb[k]; o.wb[k]= x ? [Math.max(x[0],v[0]),Math.max(x[1],v[1])] : v; }
+  if(o.session && o.session.day < o.next && b.next>a.next) o.session=null;
+  return o;
+}
+async function syncNow(){
+  if(syncing || !db.auth || !db.dirty || !CFG.url) return;
+  syncing=true; setStatus('saving'); const v0=ver; const A=db.auth;
+  try{
+    let r=await rpc('st_save',{p_name:A.name,p_pin:A.pin,p_data:prof(),p_rev:A.rev});
+    if(r.error==='conflict'){ db.profiles[A.name]=mergeP(prof(), r.data); r=await rpc('st_save',{p_name:A.name,p_pin:A.pin,p_data:prof(),p_rev:r.rev}); }
+    if(r.ok){ A.rev=r.rev; if(ver===v0) db.dirty=false; persist(); setStatus(db.dirty?'saving':'ok'); if(db.dirty) schedule(500); }
+    else if(r.error==='wrong_pin' || r.error==='not_found'){ setStatus('err'); }
+    else { setStatus('err'); schedule(20000); }
+  }catch(e){ setStatus('offline'); schedule(15000); }
+  syncing=false;
+}
+window.addEventListener('online', ()=>schedule(300));
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') syncNow(); });
+setInterval(()=>{ if(db.dirty) syncNow(); }, 30000);
+function showWarn(){}
+
+/* ---------- dates ---------- */
+const dayNum = d => Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+const today = () => dayNum(new Date());
+const fmt = n => { const d = new Date(n*864e5); return `${d.getUTCFullYear()}.${d.getUTCMonth()+1}.${d.getUTCDate()}`; };
+
+/* ---------- grading ---------- */
+const norm = s => s.replace(/[\s~∼…·.,!?'"“”‘’()\[\]{}<>「」『』\-]/g, '').toLowerCase();
+function splitTop(s){ const out=[]; let depth=0, cur=''; for(const ch of s){ if('([{'.includes(ch)) depth++; if(')]}'.includes(ch)) depth--; if((ch===','||ch===';') && depth<=0){ out.push(cur); cur=''; } else cur+=ch; } out.push(cur); return out.map(x=>x.trim()).filter(Boolean); }
+function variants(part){
+  let set = new Set([part]);
+  // X[Y] : Y replaces the word X directly before it
+  for(let k=0;k<3;k++){ const next=new Set(); for(const v of set){ const m=v.match(/([가-힣A-Za-z]+)\[([^\]]+)\]/); if(m){ next.add(v.replace(m[0], m[1])); for(const alt of m[2].split(/[,/]/)) next.add(v.replace(m[0], alt.trim())); } else next.add(v); } set=next; }
+  const out = new Set();
+  for(const v of set){ out.add(norm(v.replace(/\([^)]*\)/g,''))); out.add(norm(v)); }
+  out.delete(''); return out;
+}
+const accCache = new Map();
+function accepted(i){ if(!accCache.has(i)){ const s=new Set(); for(const p of splitTop(WORDS[i][1])) for(const v of variants(p)) s.add(v); accCache.set(i,s); } return accCache.get(i); }
+function grade(i, answer){ const acc = accepted(i); return answer.split(/[,/;]/).map(norm).filter(Boolean).some(a => acc.has(a)); }
+
+/* ---------- profile & SRS ---------- */
+function prof(){ return db.profiles[db.current]; }
+function newProfile(){ return {next:1, srs:{}, log:{}, results:{}, session:null, created:today()}; }
+function doneToday(p){ return p.log[today()] || 0; }
+function canStart(p){ return p.next <= DAYS && doneToday(p) < MAX_PER_DAY; }
+function dayIdx(d){ const a=[], s=DSTART[d-1], e=d<DAYS?DSTART[d]:WORDS.length; for(let i=s;i<e;i++) a.push(i); return a; }
+function hl(i){ const w=WORDS[i][0], ex=WORDS[i][3]; const stem=w.split(/[ -]/)[0].toLowerCase(); const k=Math.max(3,Math.min(stem.length-1,5)); const re=new RegExp('\\b('+stem.slice(0,k).replace(/[^a-z]/g,'')+'[a-z]*)','i'); return esc(ex).replace(re,'<b>$1</b>'); }
+function exBlock(i){ const [,,,ex,ko,note]=WORDS[i]; return `<div class="ex"><div class="ex-en">${hl(i)}</div><div class="ex-ko">${esc(ko)}</div></div>${note?`<div class="note-box"><span>주의</span>${esc(note)}</div>`:''}`; }
+function pickReview(p, d){
+  if(d<=1) return [];
+  const t = today(), pool = [];
+  for(let dd=1; dd<d; dd++) for(const i of dayIdx(dd)){ const s=p.srs[i]; if(s) pool.push([i,s]); }
+  const A = pool.filter(([,s])=>s.due<=t && s.last===0).sort((a,b)=>b[1].w-a[1].w || a[1].due-b[1].due);
+  const B = pool.filter(([,s])=>s.due<=t && s.last!==0).sort((a,b)=>a[1].due-b[1].due || a[1].s-b[1].s);
+  const C = pool.filter(([,s])=>s.due>t).sort((a,b)=>b[1].w-a[1].w || a[1].s-b[1].s || a[1].due-b[1].due);
+  const wb = ensureWB(p), inA = new Set(A.map(([i])=>i));
+  const F = pool.filter(([i,s])=>wb[i] && !inA.has(i) && (s.seen||0)<t).sort((a,b)=>(a[1].seen||0)-(b[1].seen||0) || b[1].w-a[1].w).slice(0, FAV_MAX);
+  const out=[], used=new Set();
+  for(const [i] of [...A,...F,...B,...C]){ if(out.length>=REVIEW) break; if(!used.has(i)){ used.add(i); out.push(i); } }
+  return out;
+}
+function applyResult(p, i, ok){
+  const s = p.srs[i] || {s:0, due:0, w:0, c:0, last:-1}; s.seen = today();
+  if(ok){ s.s = Math.min(s.s+1, INTERVAL.length-1); s.c++; s.last=1; s.due = today()+INTERVAL[s.s]; }
+  else { s.s = 0; s.w++; s.last=0; s.due = today()+1; ensureWB(p); const e=p.wb[i]||[0,0]; e[0]++; e[1]=today(); p.wb[i]=e; }
+  p.srs[i] = s;
+}
+function ensureWB(p){ if(!p.wb){ p.wb={}; for(const [i,s] of Object.entries(p.srs)) if(s.w>0) p.wb[i]=[s.w, s.due-1]; } return p.wb; }
+function starBtn(i){ const on=!!ensureWB(prof())[i]; return `<button class="star${on?' on':''}" data-s="${i}" aria-label="즐겨찾기">${on?'★':'☆'}</button>`; }
+function toggleStar(i){ const wb=ensureWB(prof()); if(wb[i]) delete wb[i]; else wb[i]=[0,today()]; save(); return !!wb[i]; }
+function bindStars(root){ root.querySelectorAll('.star').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const on=toggleStar(b.dataset.s); b.classList.toggle('on',on); b.textContent=on?'★':'☆'; }); }
+const back = () => '<button class="back" id="bkh">← 홈으로</button>';
+function bindBack(){ const b=app.querySelector('#bkh'); if(b) b.onclick=()=>{ window.scrollTo(0,0); screenHome(); }; }
+const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+/* ---------- screens ---------- */
+function setWho(){ const w=document.getElementById('who'); if(db.auth){ w.hidden=false; w.textContent=db.current+' · 로그아웃'; } else w.hidden=true; setStatus(db.dirty?'saving':'ok'); }
+
+function screenLogin(msg){
+  setWho();
+  app.innerHTML = `<div class="card pop">
+    <h1>Day 1부터<br>하루 30단어씩</h1>
+    <p class="mute">수능 영단어 ${WORDS.length.toLocaleString()}개 · ${DAYS} Day. 기록은 서버에 자동 저장돼서 어느 폰에서든 이름과 비밀번호로 이어서 할 수 있어요.</p>
+    <form id="f" style="margin-top:16px">
+    <label class="mute" for="nm">이름</label><input type="text" id="nm" maxlength="20" placeholder="예: 송윤하" autocomplete="username" style="margin:6px 0 12px">
+    <label class="mute" for="pw">비밀번호 (숫자 4자리)</label><input type="password" id="pw" class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="current-password" placeholder="····" style="margin:6px 0 12px">
+    <p class="note" id="lm" style="text-align:left;color:var(--ng);margin:0 0 10px">${msg?esc(msg):''}</p>
+    <button class="btn" id="lb">시작하기</button></form>
+    <p class="mute" style="margin-top:14px">처음이면 쓰고 싶은 이름과 비밀번호를 정해서 입력하세요. 비밀번호를 잊으면 선생님께 말하면 바꿔 줄 수 있어요.</p></div>`;
+  const f=app.querySelector('#f'), lm=app.querySelector('#lm'), lb=app.querySelector('#lb');
+  f.onsubmit=async e=>{ e.preventDefault();
+    const n=app.querySelector('#nm').value.trim(), pin=app.querySelector('#pw').value.trim();
+    if(!n) return app.querySelector('#nm').focus();
+    if(!/^[0-9]{4}$/.test(pin)){ lm.textContent='비밀번호는 숫자 4자리예요.'; return; }
+    lb.disabled=true; lb.textContent='확인 중…'; lm.textContent='';
+    try{
+      const r=await rpc('st_login',{p_name:n,p_pin:pin,p_create:false});
+      if(r.ok) return enter(n,pin,r);
+      if(r.error==='not_found') return confirmNew(n,pin);
+      lm.textContent={wrong_pin:'비밀번호가 틀렸어요.',locked:'10번 틀려서 10분 동안 잠겼어요. 잊었으면 선생님께 말해 주세요.',invalid:'이름은 20자 이내, 비밀번호는 숫자 4자리로 입력해 주세요.'}[r.error]||'로그인하지 못했어요. 다시 시도해 주세요.';
+    }catch(err){ lm.textContent='서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.'; }
+    lb.disabled=false; lb.textContent='시작하기';
+  };
+}
+function confirmNew(n,pin){
+  app.innerHTML=`<div class="card pop"><h1>처음 오셨네요</h1>
+    <p><b>${esc(n)}</b> 이름으로 새로 시작할까요?</p><p class="mute">비밀번호 ${'●'.repeat(4)}를 꼭 기억해 두세요. 다음부터 이 이름과 비밀번호로 들어와요. 이름을 잘못 썼다면 '다시 입력'을 누르세요.</p>
+    <div class="row" style="margin-top:12px"><button class="btn" id="yes">새로 시작</button><button class="btn ghost" id="no">다시 입력</button></div><p class="note" id="lm"></p></div>`;
+  app.querySelector('#no').onclick=()=>screenLogin();
+  app.querySelector('#yes').onclick=async e=>{ e.target.disabled=true; try{ const r=await rpc('st_login',{p_name:n,p_pin:pin,p_create:true}); if(r.ok) return enter(n,pin,r,true); screenLogin('만들지 못했어요. 다시 시도해 주세요.'); }catch(err){ app.querySelector('#lm').textContent='서버에 연결하지 못했어요.'; e.target.disabled=false; } };
+}
+function enter(n,pin,r,isNew){
+  const server = r.data && r.data.srs ? r.data : null;
+  db={profiles:{[n]: server || newProfile()}, current:n, auth:{name:n,pin,rev:r.rev}, dirty:false};
+  if(!server){ db.dirty=true; }
+  persist(); setWho(); if(db.dirty) schedule(300);
+  isNew ? screenWelcome() : screenHome();
+}
+function screenWelcome(){
+  app.innerHTML=`<div class="card pop"><h1>환영해요!</h1><p class="mute">이제 기록이 서버에 자동으로 저장돼요. 백업 코드는 더 이상 필요 없어요.</p>
+    <p class="mute">예전 단어장(claude.ai 링크)에서 공부하던 기록이 있으면, 그 백업 코드로 지금 계정에 옮길 수 있어요.</p>
+    <div class="row" style="margin-top:12px"><button class="btn" id="go">바로 시작</button><button class="btn ghost" id="rs">예전 기록 옮기기</button></div></div>`;
+  app.querySelector('#go').onclick=screenHome; app.querySelector('#rs').onclick=screenRestore;
+}
+async function refreshFromServer(){
+  if(!db.auth || !CFG.url) return;
+  try{ const A=db.auth; const r=await rpc('st_login',{p_name:A.name,p_pin:A.pin,p_create:false});
+    if(r.ok){ if(r.rev>A.rev){ const local=prof(); db.profiles[A.name]= db.dirty ? mergeP(local, r.data) : (r.data&&r.data.srs?r.data:local); A.rev=r.rev; persist(); if(db.dirty) schedule(300); if(!app.querySelector('#a')) screenHome(); } setStatus(db.dirty?'saving':'ok'); }
+    else if(r.error==='wrong_pin'||r.error==='not_found'){ db={profiles:{},current:null}; persist(); screenLogin('비밀번호가 바뀌었어요. 새 비밀번호로 다시 들어와 주세요.'); }
+  }catch(e){ setStatus('offline'); }
+}
+async function logout(){
+  if(db.dirty){ await syncNow(); }
+  if(db.dirty && !confirmBox) { confirmBox=true; app.insertAdjacentHTML('afterbegin','<div class="warn">아직 저장되지 않은 기록이 있어요. 인터넷에 연결한 뒤 다시 로그아웃을 눌러 주세요.</div>'); return; }
+  confirmBox=false; db={profiles:{},current:null}; persist(); screenLogin();
+}
+let confirmBox=false;
+
+function screenHome(){
+  setWho(); const p=prof(); if(!p) return screenLogin();
+  const learned = Object.keys(p.srs).length, strong = Object.values(p.srs).filter(s=>s.s>=4).length;
+  const finished = p.next>DAYS, doneT = doneToday(p);
+  let cta;
+  if(p.session) cta = `<button class="btn" id="go">Day ${p.session.day} 이어서 하기</button>`;
+  else if(finished) cta = `<p><b>전체 ${DAYS} Day 완주!</b> 정말 고생 많았어요.</p>`;
+  else if(doneT>=MAX_PER_DAY) cta = `<button class="btn" disabled>오늘은 ${MAX_PER_DAY} Day 완료 · 내일 Day ${p.next}</button><p class="note">몰아서 하는 것보다 매일 하는 게 훨씬 오래 남아요.</p>`;
+  else cta = `<button class="btn" id="go">Day ${p.next} 시작</button>`;
+  const bkAge = p.bk ? today()-p.bk : null;
+  const nudge = '' && learned>0 && (bkAge===null || bkAge>=3) ? `<div class="warn" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>${bkAge===null?'아직 백업한 적이 없어요.':`마지막 백업 ${bkAge}일 전`} 기록이 지워질 수 있으니 백업해 두세요.</span><button class="mini" id="nbk">백업</button></div>` : '';
+  app.innerHTML = `${nudge}<div class="card pop">
+    <p class="mute" style="margin:0">${esc(db.current)}님의 학습</p>
+    <h1>${finished?'완주':'Day '+(p.session?p.session.day:p.next)}<span class="mute" style="font-size:18px;font-weight:500"> / ${DAYS}</span></h1>
+    <div class="bar"><i style="width:${Math.round((p.next-1)/DAYS*100)}%"></i></div>
+    <div class="stats"><div class="stat"><b>${learned}</b><small>학습한 단어</small></div><div class="stat"><b>${strong}</b><small>장기 기억</small></div><div class="stat"><b>${doneT}/${MAX_PER_DAY}</b><small>오늘 완료</small></div></div>
+    ${cta}</div>
+    <div class="row" style="margin-top:14px"><button class="btn ghost" id="wbk">★ 즐겨찾기 · ${Object.keys(ensureWB(p)).length}개</button><button class="btn ghost" id="hp">사용 방법</button></div>
+    <div class="card"><h2>지난 Day 단어 보기</h2><p class="mute" style="margin:0">완료한 Day를 누르면 단어와 틀린 횟수를 볼 수 있어요.</p>
+    <div class="days">${Array.from({length:DAYS},(_,k)=>k+1).map(d=>`<button class="day ${d<p.next?'done':''} ${d===p.next?'next':''}" data-d="${d}" ${d<p.next?'':'disabled'}>${d}</button>`).join('')}</div></div>
+    <div class="links"><button class="btn ghost" id="rs">예전 기록 옮기기</button></div>`;
+  const go=app.querySelector('#go'); if(go) go.onclick=()=>{ if(!p.session) startDay(p); screenStudyOrTest(); };
+  app.querySelectorAll('.day.done').forEach(b=>b.onclick=()=>screenDayList(+b.dataset.d));
+  app.querySelector('#rs').onclick=screenRestore;
+  const nb=app.querySelector('#nbk'); if(nb) nb.onclick=screenBackup;
+  app.querySelector('#wbk').onclick=()=>screenWrong('n'); app.querySelector('#hp').onclick=screenHelp;
+}
+
+function startDay(p){
+  const d=p.next, fresh=dayIdx(d), rev=pickReview(p,d);
+  p.session={day:d, phase:'study', fresh, q:shuffle([...fresh.map(i=>[i,'n']), ...rev.map(i=>[i,'r'])]), pos:0, ans:[], date:today()};
+  save();
+}
+function screenStudyOrTest(){ const s=prof().session; if(!s) return screenHome(); s.phase==='study'?screenStudy():screenTest(); }
+
+function screenStudy(){
+  const p=prof(), s=p.session;
+  app.innerHTML = `${back()}<div class="card pop"><div class="qtop"><span class="tag new">Day ${s.day} 새 단어</span><span>${s.fresh.length}개</span></div>
+    <h1 style="margin-top:12px">먼저 외워요</h1><p class="mute">'뜻 가리기'를 켜고 단어를 누르면 뜻이 하나씩 보여요. 잘 안 외워지는 단어는 ☆를 눌러 즐겨찾기하세요.${s.q.length>s.fresh.length?` 테스트에는 복습 단어 ${s.q.length-s.fresh.length}개가 함께 나와요.`:''}</p>
+    <div class="row" style="margin:12px 0 4px"><button class="btn ghost" id="hd">뜻 가리기</button><button class="btn ghost" id="sh">순서 섞기</button></div>
+    <ul class="words" id="wl"></ul>
+    <button class="btn" id="go" style="margin-top:16px">다 외웠어요 · 테스트 시작</button></div>`;
+  const wl=app.querySelector('#wl'); let list=[...s.fresh];
+  const draw=()=>{ wl.innerHTML=list.map((i,k)=>`<li><span class="n">${k+1}</span><span class="en">${esc(WORDS[i][0])} <small class="pr">${esc(WORDS[i][2])}</small>${starBtn(i)}</span><span class="ko">${esc(WORDS[i][1])}</span><span class="exs">${hl(i)}<br><span class="mute">${esc(WORDS[i][4])}</span></span></li>`).join(''); wl.querySelectorAll('li').forEach(li=>li.onclick=()=>li.classList.toggle('show')); bindStars(wl); };
+  draw();
+  app.querySelector('#hd').onclick=e=>{ const on=wl.classList.toggle('hide'); e.target.textContent=on?'뜻 보이기':'뜻 가리기'; wl.querySelectorAll('li').forEach(li=>li.classList.remove('show')); };
+  app.querySelector('#sh').onclick=()=>{ list=shuffle(list); draw(); };
+  app.querySelector('#go').onclick=()=>{ s.phase='test'; save(); window.scrollTo(0,0); screenTest(); };
+  bindBack();
+}
+
+function screenTest(){
+  const p=prof(), s=p.session;
+  if(s.pos>=s.q.length) return finishDay();
+  const [i,kind]=s.q[s.pos];
+  app.innerHTML = `${back()}<div class="card pop"><div class="qtop"><span class="tag ${kind==='n'?'new':'rev'}">${kind==='n'?'새 단어':(ensureWB(p)[i]?'★ 복습':'복습')}</span><span>${s.pos+1} / ${s.q.length}</span></div>
+    <div class="bar"><i style="width:${s.pos/s.q.length*100}%"></i></div>
+    <div class="qword">${esc(WORDS[i][0])}</div><div class="qpr">${esc(WORDS[i][2])}</div>
+    <form id="f"><input type="text" id="a" placeholder="한국어 뜻" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
+    <p class="hint">답을 모르겠으면 '몰라'라고 적어주세요. 띄어쓰기는 무시해요. 뜻이 여러 개면 하나만 맞혀도 정답이에요.</p>
+    <div id="fb"></div><button class="btn" id="sb">확인</button></form>
+    <button class="btn ghost" id="ov" style="margin-top:8px" hidden>사실 맞았어요 · 정답 처리</button></div>
+    <button class="btn ghost" id="qt" style="margin-top:14px">잠깐 쉬기 (홈으로)</button>`;
+  const a=app.querySelector('#a'), fb=app.querySelector('#fb'), sb=app.querySelector('#sb'), ov=app.querySelector('#ov');
+  a.focus();
+  let judged=null;
+  app.querySelector('#f').onsubmit=e=>{
+    e.preventDefault();
+    if(judged===null){
+      const val=a.value.trim(); if(!val){ a.focus(); return; }
+      const dk=/^(몰라|모름|모르겠어|모르겠음|모르겠다|몰라요|모르겠어요|\?+)$/.test(val.replace(/\s/g,''));
+      judged=dk?false:grade(i,val); a.readOnly=true;
+      fb.innerHTML=`<div class="fb ${judged?'ok':'ng'}"><strong>${judged?'정답':dk?'모르는 단어':'오답'}</strong>${esc(WORDS[i][1])}${judged||dk?'':`<div class="mine">내 답: ${esc(val)}</div>`}</div>${exBlock(i)}${judged?`<p class="mute" style="margin:0 0 10px">${starBtn(i)} 맞혔지만 헷갈리면 즐겨찾기</p>`:'<p class="mute" style="margin:0 0 10px">틀린 단어는 자동으로 즐겨찾기에 들어가요.</p>'}`;
+      bindStars(fb); sb.textContent='다음'; ov.hidden=judged||dk; a.focus();
+      ov.onclick=()=>{ judged=true; ov.hidden=true; fb.querySelector('.fb').className='fb ok'; fb.querySelector('strong').textContent='정답 처리됨'; a.focus(); };
+      return;
+    }
+    s.ans.push([i,kind,judged?1:0,a.value.trim()]); applyResult(p,i,judged); s.pos++; save(); screenTest();
+  };
+  app.querySelector('#qt').onclick=screenHome; bindBack();
+}
+
+function finishDay(){
+  const p=prof(), s=p.session, t=today();
+  const nw=s.ans.filter(x=>x[1]==='n'), rv=s.ans.filter(x=>x[1]==='r');
+  const r={day:s.day, date:t, n:[nw.filter(x=>x[2]).length,nw.length], r:[rv.filter(x=>x[2]).length,rv.length], wrong:s.ans.filter(x=>!x[2]).map(x=>[x[0],x[3]])};
+  p.results[s.day]=r; p.log[t]=(p.log[t]||0)+1; p.next=Math.max(p.next,s.day+1); p.session=null; save();
+  screenResult(s.day);
+}
+
+function screenResult(d){
+  const p=prof(), r=p.results[d]; if(!r) return screenHome();
+  const tot=r.n[1]+r.r[1], ok=r.n[0]+r.r[0], pct=tot?Math.round(ok/tot*100):0;
+  app.innerHTML = `<div class="card pop" id="rc">
+    <div class="res-head"><div><b style="font-size:20px">${esc(db.current)}</b><div class="mute">Day ${r.day} · ${fmt(r.date)}</div></div><div class="big" style="color:var(--acc)">${pct}%</div></div>
+    <div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="stat"><b>${r.n[0]}/${r.n[1]}</b><small>새 단어</small></div><div class="stat"><b>${r.r[1]?r.r[0]+'/'+r.r[1]:'-'}</b><small>복습</small></div></div>
+    <h2 style="margin-top:6px">틀린 단어 ${r.wrong.length}개</h2>
+    ${r.wrong.length?`<ul class="words wrong">${r.wrong.map(([i,mine])=>`<li><span class="en">${esc(WORDS[i][0])} <small class="pr">${esc(WORDS[i][2])}</small></span><span class="ko">${esc(WORDS[i][1])}</span></li>`).join('')}</ul>`:'<p class="mute">전부 맞혔어요!</p>'}
+    <p class="note">이 화면을 캡처해서 선생님께 보내주세요. 틀린 단어는 다음 Day 복습에 먼저 나와요.</p></div>
+    <button class="btn" id="hm" style="margin-top:14px">홈으로</button>`;
+  app.querySelector('#hm').onclick=screenHome; window.scrollTo(0,0);
+
+}
+
+function screenDayList(d){
+  const p=prof();
+  app.innerHTML = `${back()}<div class="card pop"><div class="qtop"><span class="tag">Day ${d}</span>${p.results[d]?`<button class="chip" id="rr">결과 카드 보기</button>`:''}</div>
+    <h1 style="margin-top:10px">Day ${d} 단어</h1><p class="mute">숫자는 지금까지 틀린 횟수예요. 단어를 누르면 뜻이 보여요.</p>
+    <div class="row" style="margin:10px 0"><button class="btn ghost" id="hd">뜻 가리기</button><button class="btn ghost" id="hm">홈으로</button></div>
+    <ul class="words" id="wl">${dayIdx(d).map(i=>{ const w=(p.srs[i]||{}).w||0; return `<li><span class="n" style="${w?'color:var(--ng);font-weight:700':''}">${w||''}</span><span class="en">${esc(WORDS[i][0])} <small class="pr">${esc(WORDS[i][2])}</small>${starBtn(i)}</span><span class="ko">${esc(WORDS[i][1])}</span><span class="exs">${hl(i)}<br><span class="mute">${esc(WORDS[i][4])}</span></span></li>`; }).join('')}</ul></div>`;
+  const wl=app.querySelector('#wl'); wl.querySelectorAll('li').forEach(li=>li.onclick=()=>li.classList.toggle('show'));
+  app.querySelector('#hd').onclick=e=>{ const on=wl.classList.toggle('hide'); e.target.textContent=on?'뜻 보이기':'뜻 가리기'; };
+  app.querySelector('#hm').onclick=screenHome; const rr=app.querySelector('#rr'); if(rr) rr.onclick=()=>screenResult(d); bindBack(); bindStars(wl);
+  window.scrollTo(0,0);
+}
+
+/* ---------- backup ---------- */
+async function gz(str){ const cs=new Blob([str]).stream().pipeThrough(new CompressionStream('gzip')); return new Uint8Array(await new Response(cs).arrayBuffer()); }
+async function ungz(u){ const ds=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip')); return await new Response(ds).text(); }
+const b64u = u => { let b=''; for(const x of u) b+=String.fromCharCode(x); return btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+const unb64u = s => { s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return Uint8Array.from(atob(s),c=>c.charCodeAt(0)); };
+const chk = s => { let h=7; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return (h%1679616).toString(36).padStart(4,'0'); };
+const B=20000, t36=n=>(+n).toString(36), f36=s=>parseInt(s,36);
+function compact(name,p){
+  const s=Object.entries(p.srs).map(([i,v])=>[t36(i),v.s,t36(Math.max(0,v.due-B)),t36(v.w),t36(v.c),v.last+1].join('.')).join(',');
+  const w=Object.entries(ensureWB(p)).map(([i,v])=>[t36(i),t36(v[0]),t36(Math.max(0,v[1]-B))].join('.')).join(',');
+  const r=Object.values(p.results).map(x=>[t36(x.day),t36(x.date-B),x.n[0],x.n[1],x.r[0],x.r[1],x.wrong.map(y=>t36(y[0])).join('-')].join('.')).join(',');
+  return {v:2,n:name,x:p.next,c:p.created,t:[today(),doneToday(p)],s,w,r};
+}
+function expand(o){
+  const p=newProfile(); p.next=o.x; p.created=o.c||today(); if(o.t) p.log[o.t[0]]=o.t[1]; p.wb={};
+  if(o.s) for(const e of o.s.split(',')){ const [i,s,d,w,c,l]=e.split('.'); p.srs[f36(i)]={s:+s,due:f36(d)+B,w:f36(w),c:f36(c),last:(+l)-1}; }
+  if(o.w) for(const e of o.w.split(',')){ const [i,n,d]=e.split('.'); p.wb[f36(i)]=[f36(n),f36(d)+B]; }
+  if(o.r) for(const e of o.r.split(',')){ const [d,dt,a,b,c,e2,wr]=e.split('.'); p.results[f36(d)]={day:f36(d),date:f36(dt)+B,n:[+a,+b],r:[+c,+e2],wrong:wr?wr.split('-').map(x=>[f36(x),'']):[]}; }
+  return p;
+}
+async function pack(name,p){
+  const json=JSON.stringify(compact(name,p));
+  let data; try{ data='z'+b64u(await gz(json)); }catch(e){ data='j'+b64u(new TextEncoder().encode(json)); }
+  return `DAL2.${t36(data.length)}.${chk(data)}.${data}`;
+}
+async function unpack(code){
+  code=code.replace(/\s/g,''); const k=code.indexOf('DAL'); if(k<0) throw 'bad'; code=code.slice(k);
+  if(code.startsWith('DAL2.')){
+    const [, len, c, data='']=code.split('.');
+    if(data.length<f36(len)) throw 'cut';
+    const d=data.slice(0,f36(len)); if(chk(d)!==c) throw 'cut';
+    const json = d[0]==='z' ? await ungz(unb64u(d.slice(1))) : new TextDecoder().decode(unb64u(d.slice(1)));
+    const o=JSON.parse(json); return {name:o.n, p:expand(o)};
+  }
+  if(code.startsWith('DAL1:')){ const json=await ungz(Uint8Array.from(atob(code.slice(5)),c=>c.charCodeAt(0))); return JSON.parse(json); }
+  if(code.startsWith('DAL0:')) return JSON.parse(decodeURIComponent(escape(atob(code.slice(5)))));
+  throw 'bad';
+}
+async function copyBackup(btn, msgEl, taWrap){
+  const p=prof(); const code=await pack(db.current,p);
+  try{ await navigator.clipboard.writeText(code); p.bk=today(); save(); msgEl.textContent=`복사했어요 (${code.length.toLocaleString()}자). 카톡 '나와의 채팅'에 붙여 넣어 보관하세요.`; }
+  catch(e){ taWrap.innerHTML=`<textarea readonly>${esc(code)}</textarea>`; const ta=taWrap.querySelector('textarea'); ta.focus(); ta.select(); p.bk=today(); save(); msgEl.textContent='코드가 선택됐어요. 길게 눌러 전체를 복사해 주세요.'; }
+}
+async function screenBackup(){
+  const code=await pack(db.current, prof());
+  app.innerHTML=`${back()}<div class="card pop"><h1>백업 코드</h1><p class="mute">휴대폰을 바꾸거나 기록이 지워졌을 때 이 코드로 되살릴 수 있어요. 복사해서 카톡 '나와의 채팅'에 보관하세요.</p>
+    <p class="mute">불러올 때는 카톡 말풍선을 눌러 '전체보기'로 연 다음 전체를 복사하세요. 말풍선에서 바로 복사하면 코드가 잘릴 수 있어요.</p>
+    <textarea id="cd" readonly>${esc(code)}</textarea><p class="mute" style="margin:6px 0 0">${code.length.toLocaleString()}자 · 진행 중인 Day는 처음부터 다시 시작돼요.</p><div class="row" style="margin-top:10px"><button class="btn" id="cp">복사하기</button><button class="btn ghost" id="hm">홈으로</button></div><p class="note" id="msg"></p></div>`;
+  const ta=app.querySelector('#cd'); bindBack();
+  app.querySelector('#cp').onclick=async()=>{ const m=app.querySelector('#msg'); try{ await navigator.clipboard.writeText(code); prof().bk=today(); save(); m.textContent='복사했어요.'; }catch(e){ ta.focus(); ta.select(); prof().bk=today(); save(); m.textContent='코드가 선택됐어요. 길게 눌러 전체를 복사해 주세요.'; } };
+  app.querySelector('#hm').onclick=screenHome;
+}
+function screenRestore(){
+  app.innerHTML=`${back()}<div class="card pop"><h1>예전 기록 옮기기</h1><p class="mute">예전 단어장(claude.ai 링크)에서 만든 백업 코드를 붙여 넣으면, 지금 계정에 기록이 합쳐져요.</p>
+    <p class="mute">카톡에 보관했다면 말풍선을 눌러 '전체보기'로 연 다음 전체를 복사해야 해요.</p>
+    <textarea id="cd" placeholder="DAL2..."></textarea><div class="row" style="margin-top:10px"><button class="btn" id="ok">옮기기</button><button class="btn ghost" id="bk">취소</button></div><p class="note" id="msg"></p></div>`;
+  bindBack();
+  app.querySelector('#ok').onclick=async()=>{ const m=app.querySelector('#msg'); try{ const o=await unpack(app.querySelector('#cd').value); if(!o.p||!o.p.srs) throw 'bad'; db.profiles[db.current]=mergeP(prof(), o.p); save(); screenHome(); }catch(e){ m.textContent= e==='cut' ? '코드 일부가 잘렸어요. 카톡 말풍선의 \'전체보기\'를 열고 처음부터 끝까지 다시 복사해 주세요.' : '백업 코드가 아니에요. DAL로 시작하는 코드 전체를 붙여 넣어 주세요.'; } };
+  app.querySelector('#bk').onclick=screenHome;
+}
+
+document.getElementById('who').onclick=logout;
+document.getElementById('brand').onclick=()=>{ if(WORDS.length) { db.auth&&prof()?screenHome():screenLogin(); } };
+document.getElementById('help').onclick=()=>{ if(WORDS.length) screenHelp(); };
+
+function screenWrong(sort){
+  const p=prof(); if(!p) return screenLogin();
+  const wb=ensureWB(p); save();
+  let ids=Object.keys(wb).map(Number);
+  ids.sort(sort==='r'?(a,b)=>wb[b][1]-wb[a][1]||wb[b][0]-wb[a][0]:(a,b)=>wb[b][0]-wb[a][0]||wb[b][1]-wb[a][1]);
+  window.scrollTo(0,0);
+  app.innerHTML=`${back()}<div class="card pop"><h1>★ 즐겨찾기</h1>
+    <p class="mute">틀린 단어는 자동으로 들어오고, 맞힌 단어도 ☆를 눌러 직접 넣을 수 있어요. 다 외운 단어는 '외웠어요'를 눌러 빼세요. 나중에 또 틀리면 다시 들어와요.</p>
+    ${ids.length?`<div class="chips"><button class="chip" id="so" style="${sort!=='r'?'border-color:var(--acc);color:var(--acc)':''}">자주 틀린 순</button><button class="chip" id="sr" style="${sort==='r'?'border-color:var(--acc);color:var(--acc)':''}">최근 순</button><button class="chip" id="hd">뜻 가리기</button></div>
+    <p class="mute" style="margin:0" id="wc">${ids.length}개</p>
+    <ul class="words" id="wl">${ids.map(i=>`<li data-i="${i}"><span class="n"></span><span class="en">${esc(WORDS[i][0])} <small class="pr">${esc(WORDS[i][2])}</small></span><span class="ko">${esc(WORDS[i][1])}</span><span class="exs">${hl(i)}<br><span class="mute">${esc(WORDS[i][4])}</span></span><span class="wb-row">${wb[i][0]?`<span class="cnt">${wb[i][0]}번 틀림</span>`:'<span class="cnt own">직접 추가</span>'}<button class="mini rm">외웠어요</button></span></li>`).join('')}</ul>`
+    :'<p style="margin-top:12px"><b>아직 즐겨찾기한 단어가 없어요.</b></p><p class="mute">테스트에서 틀리거나 \'몰라\'라고 쓴 단어, ☆를 누른 단어가 여기에 쌓여요.</p>'}</div>`;
+  bindBack();
+  if(!ids.length) return;
+  const wl=app.querySelector('#wl');
+  wl.querySelectorAll('li').forEach(li=>li.onclick=e=>{ if(e.target.closest('.rm')) return; li.classList.toggle('show'); });
+  app.querySelector('#hd').onclick=e=>{ const on=wl.classList.toggle('hide'); e.target.textContent=on?'뜻 보이기':'뜻 가리기'; wl.querySelectorAll('li').forEach(li=>li.classList.remove('show')); };
+  app.querySelector('#so').onclick=()=>screenWrong('n'); app.querySelector('#sr').onclick=()=>screenWrong('r');
+  wl.querySelectorAll('.rm').forEach(b=>b.onclick=()=>{
+    const li=b.closest('li'), i=li.dataset.i, saved=wb[i];
+    delete wb[i]; save(); li.hidden=true;
+    const left=wl.querySelectorAll('li:not([hidden])').length; app.querySelector('#wc').textContent=left+'개';
+    toast(`${WORDS[i][0]} 뺐어요`, ()=>{ wb[i]=saved; save(); li.hidden=false; app.querySelector('#wc').textContent=(left+1)+'개'; });
+  });
+}
+let toastT=null;
+function toast(msg, undo){
+  document.querySelectorAll('.toast').forEach(t=>t.remove()); clearTimeout(toastT);
+  const t=document.createElement('div'); t.className='toast'; t.innerHTML=`<span>${esc(msg)}</span><button>되돌리기</button>`;
+  t.querySelector('button').onclick=()=>{ undo(); t.remove(); };
+  document.body.appendChild(t); toastT=setTimeout(()=>t.remove(), 4000);
+}
+
+function screenHelp(){
+  window.scrollTo(0,0);
+  app.innerHTML=`${db.auth&&prof()?back():'<button class="back" id="bkl">← 처음으로</button>'}<div class="card pop help"><h1>사용 방법</h1>
+  <p class="mute">수능 영단어 ${WORDS.length.toLocaleString()}개를 ${DAYS} Day에 걸쳐 외우는 단어장이에요.</p>
+  <h2>1. 시작하기</h2><ul><li>처음이면 이름과 숫자 4자리 비밀번호를 정해서 입력하세요.</li><li>기록은 서버에 자동 저장돼요. 다른 폰이나 컴퓨터에서도 같은 이름과 비밀번호로 이어서 할 수 있어요.</li><li>오른쪽 위에 '✓ 저장됨'이 보이면 저장이 끝난 거예요. 인터넷이 끊겨도 폰에 잠시 보관했다가 연결되면 저장돼요.</li><li>비밀번호를 잊으면 선생님께 말하면 바꿔 줄 수 있어요.</li></ul>
+  <h2>2. 하루 공부 흐름</h2><ul><li>외우기: 그날의 새 단어 30개 안팎을 발음, 뜻, 예문과 함께 봐요. '뜻 가리기'를 켜고 단어를 누르면 하나씩 확인할 수 있어요.</li><li>테스트: 영어 단어를 보고 한국어 뜻을 적어요. Day 2부터는 복습 단어 20개가 섞여 나와요.</li><li>결과: 정답률과 틀린 단어가 나와요. 캡처해서 선생님께 보내 주세요.</li></ul>
+  <h2>3. 채점 규칙</h2><ul><li>뜻이 여러 개면 하나만 맞혀도 정답이에요.</li><li>띄어쓰기는 무시해요.</li><li>모르면 '몰라'라고 적으세요. 오답으로 기록되고 복습에 나와요.</li><li>맞게 썼는데 오답이 나오면 '사실 맞았어요'를 눌러 정답으로 바꿀 수 있어요.</li><li>답을 내면 예문과 해석, 주의할 점(헷갈리는 단어, 같이 쓰는 표현)이 나와요.</li></ul>
+  <h2>4. 망각곡선 복습</h2><ul><li>틀린 단어는 다음 날 복습에 가장 먼저 나와요.</li><li>맞힌 단어는 1일, 3일, 7일, 14일, 30일 간격으로 다시 나와요.</li><li>복습 20개는 틀린 단어, 즐겨찾기한 단어(최대 8개, 오래 안 본 것부터), 복습할 때가 된 단어, 자주 틀린 단어 순서로 채워져요.</li></ul>
+  <h2>5. 즐겨찾기</h2><ul><li>틀린 단어는 Day와 상관없이 자동으로 즐겨찾기에 모여요.</li><li>맞혔어도 잘 안 외워지는 단어는 ☆를 눌러 직접 추가하세요. 외우기 화면, 테스트 결과, 지난 Day 보기 어디서든 누를 수 있어요.</li><li>자주 틀린 순, 최근 순으로 정렬할 수 있어요.</li><li>다 외웠으면 '외웠어요'로 빼요. 실수로 뺐으면 바로 '되돌리기'를 누르세요.</li></ul>
+  <h2>6. 하루 공부량</h2><ul><li>Day를 끝내면 다음 Day가 바로 열려요. 단, 하루에 최대 2 Day까지만 할 수 있어요.</li><li>중간에 나가도 괜찮아요. 홈에서 '이어서 하기'를 누르면 하던 곳부터 계속돼요.</li></ul>
+  <h2>7. 예전 기록 옮기기</h2><ul><li>예전 단어장(claude.ai 링크)에서 공부했다면 그때 만든 백업 코드를 홈의 '예전 기록 옮기기'에 붙여 넣으세요.</li><li>카톡에 보관했다면 말풍선을 눌러 '전체보기'로 연 다음 전체를 복사하세요.</li></ul>
+  </div>`;
+  bindBack(); const bl=app.querySelector('#bkl'); if(bl) bl.onclick=screenLogin;
+}
+window.__dal={grade,variants,splitTop,WORDS,pickReview,applyResult};
+app.innerHTML='<div class="card"><p class="mute" style="margin:0">단어장을 불러오는 중…</p></div>';
+fetch('data.json').then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(d=>{ WORDS=d.w; DSTART=d.d; DAYS=DSTART.length; window.__dal.WORDS=WORDS; if(!CFG.url){ app.innerHTML='<div class="card"><h2>서버 설정이 필요해요</h2><p class="mute">config.js에 Supabase 주소와 키를 넣어 주세요.</p></div>'; return; } if(db.auth && db.profiles[db.current]){ screenHome(); refreshFromServer(); if(db.dirty) schedule(500); } else screenLogin(); }).catch(()=>{ app.innerHTML='<div class="card"><h2>단어장을 불러오지 못했어요</h2><p class="mute">인터넷 연결을 확인하고 새로고침해 주세요.</p></div>'; });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>달터디 관리자</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Source+Serif+4:opsz,wght@8..60,700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: teacher's ledger, plain and exact
+   IDEA: a class register — one row per student
+   PICTURE: the roster table itself
+   COLOUR: white/ink, indigo accent, red for trouble
+   TYPE: Noto Sans KR; serif for English words
+   LAYOUT: single column up to 980px; table stacks on phones */
+:root{color-scheme:light dark;--bg:light-dark(#f3f4f6,#0f1013);--card:light-dark(#fff,#1a1c21);--ink:light-dark(#121418,#eceef2);--mute:light-dark(#646a75,#9aa1ad);--line:light-dark(#e2e4e9,#2a2d34);--acc:light-dark(#3b3fd8,#8f93ff);--ng:light-dark(#cf2e2e,#ff6b6b);--ok:light-dark(#14804f,#4cc98a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Noto Sans KR",system-ui,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px}
+.brand{font-weight:900;font-size:18px}.brand span{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px}
+h1{font-size:clamp(24px,5vw,32px);line-height:1.15;margin:0 0 6px}h2{font-size:18px;margin:0 0 10px}
+.mute{color:var(--mute);font-size:14px}
+input{width:100%;font:16px "Noto Sans KR",sans-serif;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin:6px 0 10px}
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:0;background:var(--acc);color:#fff;font:700 15px "Noto Sans KR",sans-serif;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}.btn.red{background:var(--ng)}
+.btn:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}.stat b{display:block;font-size:26px;line-height:1.1}.stat small{color:var(--mute)}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0}
+.tools input{width:auto;flex:1 1 180px;margin:0}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--mute);font-weight:500;cursor:pointer;white-space:nowrap}td.num,th.num{text-align:right}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--bg)}
+.bad{color:var(--ng);font-weight:700}.good{color:var(--ok);font-weight:700}
+.bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;background:var(--acc)}
+@media(max-width:600px){table{font-size:14px}thead{display:none}tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;padding:10px 0;border-bottom:1px solid var(--line)}tbody td{border:0;padding:2px 0}td.nm{grid-column:1/-1;font-weight:700;font-size:16px}td::before{content:attr(data-l)' ';color:var(--mute);font-size:12px}td.nm::before{content:''}td.num{text-align:left}}
+.words li{margin:6px 0}.en{font-family:"Source Serif 4",Georgia,serif;font-weight:700;font-size:17px}
+.back{background:none;border:0;color:var(--acc);font:700 15px "Noto Sans KR",sans-serif;padding:8px 0;cursor:pointer;min-height:44px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1 1 160px}
+.msg{font-size:14px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div class="brand">달터디 <span>관리자</span></div><button class="btn ghost" id="out" hidden>로그아웃</button></header>
+<main id="app"><div class="card"><p class="mute">불러오는 중…</p></div></main>
+</div>
+<script src="config.js"></script>
+<script>
+{
+const CFG = window.DAL_CONFIG || {};
+const app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let WORDS = [], DAYS = 0, PW = null, STUDENTS = [], sortKey = 'updated', q = '';
+try { PW = sessionStorage.getItem('dal_admin'); } catch(e) {}
+const dayNum = d => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5);
+const today = () => dayNum(new Date());
+const fmt = n => { const d = new Date(n*864e5); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; };
+async function rpc(fn, args){
+  const h={'apikey':CFG.key,'Content-Type':'application/json'}; if(/^eyJ/.test(CFG.key||'')) h.Authorization='Bearer '+CFG.key;
+  const r = await fetch(CFG.url.replace(/\/$/,'')+'/rest/v1/rpc/'+fn, {method:'POST', headers:h, body:JSON.stringify(args)});
+  if(!r.ok) throw new Error('http '+r.status); return r.json();
+}
+function ago(iso){ const m=(Date.now()-new Date(iso))/6e4; if(m<1) return '방금'; if(m<60) return Math.floor(m)+'분 전'; if(m<1440) return Math.floor(m/60)+'시간 전'; return Math.floor(m/1440)+'일 전'; }
+function summarize(s){
+  const d = s.data || {}, res = Object.values(d.results || {}).sort((a,b)=>b.day-a.day);
+  const recent = res.slice(0,3); let ok=0, tot=0; for(const r of recent){ ok+=r.n[0]+r.r[0]; tot+=r.n[1]+r.r[1]; }
+  return { name:s.name, day: Math.max(0,(d.next||1)-1), learned: Object.keys(d.srs||{}).length,
+    strong: Object.values(d.srs||{}).filter(x=>x.s>=4).length, fav: Object.keys(d.wb||{}).length,
+    acc: tot? Math.round(ok/tot*100) : null, todayDone: (d.log||{})[today()]||0, updated: s.updated_at, created: s.created_at, res, data:d };
+}
+
+async function boot(){
+  if(!CFG.url){ app.innerHTML='<div class="card"><h2>config.js 설정이 필요해요</h2></div>'; return; }
+  try{ const d = await (await fetch('data.json')).json(); WORDS=d.w; DAYS=d.d.length; }catch(e){}
+  if(PW) return load();
+  try{ const st = await rpc('admin_status',{}); st.set ? screenLogin() : screenSetup(); }
+  catch(e){ app.innerHTML='<div class="card"><h2>서버에 연결하지 못했어요</h2><p class="mute">Supabase 프로젝트가 일시 정지됐을 수 있어요. 대시보드에서 Resume project를 눌러 주세요.</p></div>'; }
+}
+function screenSetup(){
+  app.innerHTML=`<div class="card"><h1>관리자 비밀번호 만들기</h1><p class="mute">처음 한 번만 정해요. 6자 이상으로, 학생들이 짐작할 수 없게 정해 주세요.</p>
+  <form id="f"><label class="mute">비밀번호</label><input type="password" id="p1" autocomplete="new-password"><label class="mute">한 번 더</label><input type="password" id="p2" autocomplete="new-password"><button class="btn">만들기</button><p class="msg bad" id="m"></p></form></div>`;
+  app.querySelector('#f').onsubmit=async e=>{ e.preventDefault(); const a=app.querySelector('#p1').value, b=app.querySelector('#p2').value, m=app.querySelector('#m');
+    if(a.length<6) return m.textContent='6자 이상으로 정해 주세요.'; if(a!==b) return m.textContent='두 비밀번호가 달라요.';
+    const r=await rpc('admin_setup',{p_pw:a}); if(r.ok){ PW=a; try{sessionStorage.setItem('dal_admin',a)}catch(e){} load(); } else m.textContent='이미 설정돼 있어요. 새로고침해 주세요.'; };
+}
+function screenLogin(msg){
+  app.innerHTML=`<div class="card"><h1>관리자 로그인</h1><form id="f"><label class="mute">관리자 비밀번호</label><input type="password" id="p1" autocomplete="current-password"><button class="btn">들어가기</button><p class="msg bad" id="m">${esc(msg||'')}</p></form></div>`;
+  app.querySelector('#f').onsubmit=e=>{ e.preventDefault(); PW=app.querySelector('#p1').value; load(); };
+}
+async function load(){
+  app.innerHTML='<div class="card"><p class="mute">학생 기록을 불러오는 중…</p></div>';
+  let r; try{ r=await rpc('admin_list',{p_pw:PW}); }catch(e){ app.innerHTML='<div class="card"><h2>서버에 연결하지 못했어요</h2><p class="mute">Supabase 프로젝트가 일시 정지됐을 수 있어요.</p></div>'; return; }
+  if(r.error){ PW=null; try{sessionStorage.removeItem('dal_admin')}catch(e){} return screenLogin('비밀번호가 틀렸어요.'); }
+  try{sessionStorage.setItem('dal_admin',PW)}catch(e){}
+  document.getElementById('out').hidden=false;
+  STUDENTS = r.students.map(summarize); screenList();
+}
+function screenList(){
+  const t=today(), list=STUDENTS.filter(s=>!q||s.name.includes(q));
+  const keyf={updated:s=>-new Date(s.updated), name:s=>s.name, day:s=>-s.day, acc:s=>s.acc==null?999:s.acc, fav:s=>-s.fav}[sortKey];
+  list.sort((a,b)=>{ const x=keyf(a), y=keyf(b); return x<y?-1:x>y?1:0; });
+  const activeToday = STUDENTS.filter(s=>s.todayDone>0).length;
+  const accs = STUDENTS.map(s=>s.acc).filter(x=>x!=null); const avg = accs.length? Math.round(accs.reduce((a,b)=>a+b,0)/accs.length) : '-';
+  const idle = STUDENTS.filter(s=>(Date.now()-new Date(s.updated))/864e5>=3).length;
+  app.innerHTML=`<h1>학생 ${STUDENTS.length}명</h1><p class="mute">숫자는 서버에 저장된 기록 기준이에요. 학생 줄을 누르면 자세히 볼 수 있어요.</p>
+  <div class="stats" style="margin-top:12px"><div class="stat"><b>${activeToday}</b><small>오늘 공부한 학생</small></div><div class="stat"><b>${avg}${avg==='-'?'':'%'}</b><small>최근 평균 정답률</small></div><div class="stat"><b class="${idle?'bad':''}">${idle}</b><small>3일 이상 미접속</small></div><div class="stat"><b>${DAYS}</b><small>전체 Day</small></div></div>
+  <div class="tools"><input id="q" placeholder="이름 검색" value="${esc(q)}"><button class="btn ghost" id="rf">새로고침</button><button class="btn ghost" id="ex">전체 기록 내려받기</button></div>
+  <div class="card" style="padding:8px 14px">${list.length?`<table><thead><tr><th data-k="name">이름</th><th data-k="day" class="num">진도</th><th data-k="acc" class="num">최근 정답률</th><th class="num">오늘</th><th data-k="fav" class="num">즐겨찾기</th><th data-k="updated">마지막 저장</th></tr></thead><tbody>
+  ${list.map(s=>`<tr data-n="${esc(s.name)}"><td class="nm">${esc(s.name)}</td><td class="num" data-l="진도">Day ${s.day}<div class="bar"><i style="width:${DAYS?Math.round(s.day/DAYS*100):0}%"></i></div></td><td class="num ${s.acc!=null&&s.acc<60?'bad':''}" data-l="정답률">${s.acc==null?'-':s.acc+'%'}</td><td class="num" data-l="오늘">${s.todayDone} Day</td><td class="num" data-l="즐겨찾기">${s.fav}</td><td data-l="저장" class="${(Date.now()-new Date(s.updated))/864e5>=3?'bad':''}">${ago(s.updated)}</td></tr>`).join('')}</tbody></table>`:'<p class="mute">아직 학생이 없어요. 학생이 앱에서 이름과 비밀번호로 처음 들어오면 여기에 나타나요.</p>'}</div>`;
+  const qi=app.querySelector('#q'); qi.oninput=()=>{ q=qi.value.trim(); const pos=qi.selectionStart; screenList(); const n=app.querySelector('#q'); n.focus(); n.setSelectionRange(pos,pos); };
+  app.querySelector('#rf').onclick=load; app.querySelector('#ex').onclick=exportAll;
+  app.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{ sortKey=th.dataset.k; screenList(); });
+  app.querySelectorAll('tbody tr').forEach(tr=>tr.onclick=()=>screenStudent(tr.dataset.n));
+}
+function screenStudent(name){
+  const s=STUDENTS.find(x=>x.name===name); if(!s) return screenList(); window.scrollTo(0,0);
+  const wrong=Object.entries(s.data.srs||{}).filter(([,v])=>v.w>0).sort((a,b)=>b[1].w-a[1].w).slice(0,20);
+  app.innerHTML=`<button class="back" id="bk">← 학생 목록</button><div class="card"><h1>${esc(s.name)}</h1><p class="mute">가입 ${new Date(s.created).toLocaleDateString('ko-KR')} · 마지막 저장 ${ago(s.updated)}</p>
+  <div class="stats" style="margin-top:12px"><div class="stat"><b>Day ${s.day}</b><small>완료한 Day</small></div><div class="stat"><b>${s.learned}</b><small>학습한 단어</small></div><div class="stat"><b>${s.strong}</b><small>장기 기억</small></div><div class="stat"><b>${s.fav}</b><small>즐겨찾기</small></div></div></div>
+  <div class="card"><h2>Day별 결과</h2>${s.res.length?`<table><thead><tr><th>Day</th><th>날짜</th><th class="num">새 단어</th><th class="num">복습</th><th class="num">정답률</th></tr></thead><tbody>${s.res.map(r=>{const t=r.n[1]+r.r[1],o=r.n[0]+r.r[0],pc=t?Math.round(o/t*100):0;return `<tr style="cursor:default"><td class="nm">Day ${r.day}</td><td data-l="날짜">${fmt(r.date)}</td><td class="num" data-l="새 단어">${r.n[0]}/${r.n[1]}</td><td class="num" data-l="복습">${r.r[1]?r.r[0]+'/'+r.r[1]:'-'}</td><td class="num ${pc<60?'bad':pc>=90?'good':''}" data-l="정답률">${pc}%</td></tr>`}).join('')}</tbody></table>`:'<p class="mute">아직 끝낸 Day가 없어요.</p>'}</div>
+  <div class="card"><h2>자주 틀린 단어</h2>${wrong.length?`<ul class="words">${wrong.map(([i,v])=>`<li><span class="en">${esc((WORDS[i]||[])[0]||'#'+i)}</span> <span class="mute">${esc((WORDS[i]||[])[1]||'')}</span> <span class="bad">${v.w}번</span></li>`).join('')}</ul>`:'<p class="mute">아직 틀린 단어가 없어요.</p>'}</div>
+  <div class="card"><h2>계정 관리</h2><p class="mute">학생이 비밀번호를 잊었을 때 새 비밀번호를 정해 주세요. 10번 틀려서 잠긴 것도 같이 풀려요.</p>
+  <div class="row"><input id="np" inputmode="numeric" maxlength="4" placeholder="새 비밀번호 (숫자 4자리)"><button class="btn" id="rp">비밀번호 바꾸기</button></div><p class="msg" id="m1"></p>
+  <div style="margin-top:18px"><button class="btn ghost" id="del">학생 삭제</button><span id="cf" hidden> <button class="btn red" id="del2">정말 삭제 (되돌릴 수 없음)</button></span></div><p class="msg" id="m2"></p></div>`;
+  app.querySelector('#bk').onclick=screenList;
+  app.querySelector('#rp').onclick=async()=>{ const v=app.querySelector('#np').value.trim(), m=app.querySelector('#m1'); if(!/^[0-9]{4}$/.test(v)) return m.textContent='숫자 4자리로 입력해 주세요.'; const r=await rpc('admin_reset_pin',{p_pw:PW,p_name:name,p_pin:v}); m.textContent=r.ok?`바꿨어요. ${name} 학생에게 새 비밀번호 ${v}를 알려 주세요.`:'바꾸지 못했어요.'; };
+  app.querySelector('#del').onclick=()=>{ app.querySelector('#cf').hidden=false; };
+  app.querySelector('#del2').onclick=async()=>{ const r=await rpc('admin_delete',{p_pw:PW,p_name:name}); if(r.ok){ STUDENTS=STUDENTS.filter(x=>x.name!==name); screenList(); } else app.querySelector('#m2').textContent='삭제하지 못했어요.'; };
+}
+async function exportAll(){
+  const r=await rpc('admin_list',{p_pw:PW}); if(!r.ok) return;
+  const blob=new Blob([JSON.stringify({exported_at:new Date().toISOString(), students:r.students})],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`daltudy-backup-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); a.remove();
+}
+document.getElementById('out').onclick=()=>{ PW=null; try{sessionStorage.removeItem('dal_admin')}catch(e){} document.getElementById('out').hidden=true; screenLogin(); };
+boot();
+}
+</script>
+</body>
+</html>

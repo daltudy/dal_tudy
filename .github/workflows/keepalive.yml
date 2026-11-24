@@ -1,0 +1,28 @@
+name: keepalive
+on:
+  schedule:
+    - cron: '17 3 */3 * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ping Supabase (prevents free-plan pause)
+        run: |
+          URL=$(grep -oP "url:\s*'\K[^']+" config.js || true)
+          KEY=$(grep -oP "key:\s*'\K[^']+" config.js || true)
+          if [ -z "$URL" ]; then echo "config.js not set yet"; exit 0; fi
+          H=(-H "apikey: $KEY" -H "Content-Type: application/json")
+          if [[ "$KEY" == eyJ* ]]; then H+=(-H "Authorization: Bearer $KEY"); fi
+          curl -fsS -X POST "${URL%/}/rest/v1/rpc/ping" "${H[@]}" -d '{}'
+      - name: Keep repository active (scheduled workflows stop after 60 idle days)
+        run: |
+          date -u +%FT%TZ > .keepalive
+          git config user.name "keepalive-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .keepalive
+          git commit -m "keepalive" || exit 0
+          git push
