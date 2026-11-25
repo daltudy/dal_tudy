@@ -389,11 +389,14 @@ function screenDayList(d){
   const p=prof();
   app.innerHTML = `${back()}<div class="card pop"><div class="qtop"><span class="tag">Day ${d}</span>${p.results[d]?`<button class="chip" id="rr">결과 카드 보기</button>`:''}</div>
     <h1 style="margin-top:10px">Day ${d} 단어</h1><p class="mute">숫자는 지금까지 틀린 횟수예요. 단어를 누르면 뜻이 보여요.</p>
+    ${p.fsession&&p.fsession.day===d?`<button class="btn" id="rt">Day ${d} 다시 테스트 이어서 하기 (${p.fsession.pos}/${p.fsession.q.length})</button>`:`<button class="btn" id="rt">Day ${d} 다시 테스트</button>`}
+    <p class="mute" style="margin:6px 0 0">진도와 하루 2 Day 제한에는 영향이 없어요. 틀린 단어는 즐겨찾기에 들어가고 복습 기록에도 반영돼요.</p>
     <div class="row" style="margin:10px 0"><button class="btn ghost" id="hd">뜻 가리기</button><button class="btn ghost" id="hm">홈으로</button></div>
     <ul class="words" id="wl">${dayIdx(d).map(i=>{ const w=(p.srs[i]||{}).w||0; return `<li><span class="n" style="${w?'color:var(--ng);font-weight:700':''}">${w||''}</span><span class="en">${esc(WORDS[i][0])} <small class="pr">${esc(WORDS[i][2])}</small>${starBtn(i)}</span><span class="ko">${esc(WORDS[i][1])}</span><span class="exs">${hl(i)}<br><span class="mute">${esc(WORDS[i][4])}</span></span></li>`; }).join('')}</ul></div>`;
   const wl=app.querySelector('#wl'); wl.querySelectorAll('li').forEach(li=>li.onclick=()=>li.classList.toggle('show'));
   app.querySelector('#hd').onclick=e=>{ const on=wl.classList.toggle('hide'); e.target.textContent=on?'뜻 보이기':'뜻 가리기'; };
   app.querySelector('#hm').onclick=screenHome; const rr=app.querySelector('#rr'); if(rr) rr.onclick=()=>screenResult(d); bindBack(); bindStars(wl);
+  app.querySelector('#rt').onclick=()=>{ if(p.fsession&&p.fsession.day===d) return screenFTest(); startQuiz(shuffle(dayIdx(d)), 'Day '+d+' 다시 테스트', d); };
   window.scrollTo(0,0);
 }
 
@@ -470,7 +473,7 @@ function screenWrong(sort){
   window.scrollTo(0,0);
   app.innerHTML=`${back()}<div class="card pop"><h1>★ 즐겨찾기</h1>
     <p class="mute">틀린 단어는 자동으로 들어오고, 맞힌 단어도 ☆를 눌러 직접 넣을 수 있어요. 다 외운 단어는 '외웠어요'를 눌러 빼세요. 나중에 또 틀리면 다시 들어와요.</p>
-    ${ids.length?`<div class="ftest"><b>즐겨찾기 테스트</b><span class="mute">맞혀도 자동으로 빠지지 않아요.</span>${p.fsession?`<button class="btn" id="fres">이어서 하기 (${p.fsession.pos}/${p.fsession.q.length})</button>`:`<div class="chips" style="margin:8px 0 0">${ids.length>10?'<button class="chip ft" data-n="10">10개</button>':''}${ids.length>20?'<button class="chip ft" data-n="20">20개</button>':''}<button class="chip ft" data-n="0">전체 ${ids.length}개</button></div>`}</div>`:''}
+    ${ids.length?`<div class="ftest"><b>즐겨찾기 테스트</b><span class="mute">맞혀도 자동으로 빠지지 않아요.</span>${p.fsession&&!p.fsession.day?`<button class="btn" id="fres">이어서 하기 (${p.fsession.pos}/${p.fsession.q.length})</button>`:`<div class="chips" style="margin:8px 0 0">${ids.length>10?'<button class="chip ft" data-n="10">10개</button>':''}${ids.length>20?'<button class="chip ft" data-n="20">20개</button>':''}<button class="chip ft" data-n="0">전체 ${ids.length}개</button></div>`}</div>`:''}
     ${ids.length?`<div class="chips"><button class="chip" id="so" style="${sort!=='r'?'border-color:var(--acc);color:var(--acc)':''}">자주 틀린 순</button><button class="chip" id="sr" style="${sort==='r'?'border-color:var(--acc);color:var(--acc)':''}">최근 순</button><button class="chip" id="hd">뜻 가리기</button></div>
     <p class="mute" style="margin:0" id="wc">${ids.length}개</p>
     <ul class="words" id="wl">${ids.map(i=>`<li data-i="${i}"><span class="n"></span><span class="en">${esc(WORDS[i][0])} <small class="pr">${esc(WORDS[i][2])}</small></span><span class="ko">${esc(WORDS[i][1])}</span><span class="exs">${hl(i)}<br><span class="mute">${esc(WORDS[i][4])}</span></span><span class="wb-row">${wb[i][0]?`<span class="cnt">${wb[i][0]}번 틀림</span>`:'<span class="cnt own">직접 추가</span>'}<button class="mini rm">외웠어요</button></span></li>`).join('')}</ul>`
@@ -497,14 +500,15 @@ function toast(msg, undo){
   document.body.appendChild(t); toastT=setTimeout(()=>t.remove(), 4000);
 }
 
-function startFav(n){
-  const p=prof(); const ids=shuffle(Object.keys(ensureWB(p)).map(Number)); p.fsession={q: n?ids.slice(0,n):ids, pos:0, ans:[]}; save(); window.scrollTo(0,0); screenFTest();
-}
+function startFav(n){ const ids=shuffle(Object.keys(ensureWB(prof())).map(Number)); startQuiz(n?ids.slice(0,n):ids, '★ 즐겨찾기 테스트', 0); }
+function startQuiz(q,label,day){ const p=prof(); p.fsession={q, pos:0, ans:[], label, day}; save(); window.scrollTo(0,0); screenFTest(); }
+const quizLabel = s => s.label || '★ 즐겨찾기 테스트';
+function quizBack(s){ return s && s.day ? ()=>screenDayList(s.day) : ()=>screenWrong('n'); }
 function screenFTest(){
   const p=prof(), s=p.fsession; if(!s) return screenWrong('n');
   if(s.pos>=s.q.length) return finishFav();
   const i=s.q[s.pos];
-  app.innerHTML = `<button class="back" id="fbk">← 즐겨찾기로</button><div class="card pop"><div class="qtop"><span class="tag rev">★ 즐겨찾기 테스트</span><span>${s.pos+1} / ${s.q.length}</span></div>
+  app.innerHTML = `<button class="back" id="fbk">← ${s.day?'Day '+s.day+' 단어로':'즐겨찾기로'}</button><div class="card pop"><div class="qtop"><span class="tag rev">${esc(quizLabel(s))}</span><span>${s.pos+1} / ${s.q.length}</span></div>
     <div class="bar"><i style="width:${s.pos/s.q.length*100}%"></i></div>
     <div class="qword">${esc(WORDS[i][0])}</div><div class="qpr">${esc(WORDS[i][2])}</div>
     <form id="f"><input type="text" id="a" placeholder="한국어 뜻" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
@@ -518,27 +522,26 @@ function screenFTest(){
       const val=a.value.trim(); if(!val){ a.focus(); return; }
       const dk=/^(몰라|모름|모르겠어|모르겠음|모르겠다|몰라요|모르겠어요|\?+)$/.test(val.replace(/\s/g,''));
       judged=dk?false:grade(i,val); a.readOnly=true;
-      fb.innerHTML=`<div class="fb ${judged?'ok':'ng'}"><strong>${judged?'정답':dk?'모르는 단어':'오답'}</strong>${esc(WORDS[i][1])}${judged||dk?'':`<div class="mine">내 답: ${esc(val)}</div>`}</div>${exBlock(i)}<p class="mute" style="margin:0 0 10px">${starBtn(i)} 다 외웠으면 ★를 눌러 즐겨찾기에서 빼세요</p>`;
+      fb.innerHTML=`<div class="fb ${judged?'ok':'ng'}"><strong>${judged?'정답':dk?'모르는 단어':'오답'}</strong>${esc(WORDS[i][1])}${judged||dk?'':`<div class="mine">내 답: ${esc(val)}</div>`}</div>${exBlock(i)}<p class="mute" style="margin:0 0 10px">${starBtn(i)} ${s.day?(judged?'헷갈리면 ☆를 눌러 즐겨찾기':'틀린 단어는 자동으로 즐겨찾기에 들어가요'):'다 외웠으면 ★를 눌러 즐겨찾기에서 빼세요'}</p>`;
       bindStars(fb); sb.textContent='다음'; ov.hidden=judged||dk; a.focus();
       ov.onclick=()=>{ judged=true; ov.hidden=true; fb.querySelector('.fb').className='fb ok'; fb.querySelector('strong').textContent='정답 처리됨'; a.focus(); };
       return;
     }
-    const wasFav=!!ensureWB(p)[i];
+
     s.ans.push([i,judged?1:0]); applyResult(p,i,judged);
-    if(!wasFav && judged) delete p.wb[i];
     s.pos++; save(); screenFTest();
   };
-  app.querySelector('#fbk').onclick=()=>screenWrong('n');
+  app.querySelector('#fbk').onclick=quizBack(s);
 }
 function finishFav(){
   const p=prof(), s=p.fsession; const ok=s.ans.filter(x=>x[1]).length, tot=s.ans.length;
   p.fsession=null; save(); window.scrollTo(0,0);
-  app.innerHTML=`${back()}<div class="card pop"><div class="res-head"><div><b style="font-size:20px">즐겨찾기 테스트</b><div class="mute">${esc(db.current)} · ${fmt(today())}</div></div><div class="big" style="color:var(--acc)">${tot?Math.round(ok/tot*100):0}%</div></div>
-    <p>${tot}개 중 <b>${ok}개</b> 맞혔어요.</p><p class="mute">맞힌 단어도 즐겨찾기에 그대로 남아 있어요. 다 외웠다 싶은 단어만 ★를 눌러 빼세요.</p>
+  app.innerHTML=`${back()}<div class="card pop"><div class="res-head"><div><b style="font-size:20px">${esc(quizLabel(s))}</b><div class="mute">${esc(db.current)} · ${fmt(today())}</div></div><div class="big" style="color:var(--acc)">${tot?Math.round(ok/tot*100):0}%</div></div>
+    <p>${tot}개 중 <b>${ok}개</b> 맞혔어요.</p><p class="mute">${s.day?'틀린 단어는 즐겨찾기에 들어갔어요. ★로 넣고 뺄 수 있어요.':'맞힌 단어도 즐겨찾기에 그대로 남아 있어요. 다 외웠다 싶은 단어만 ★를 눌러 빼세요.'}</p>
     <ul class="words" id="wl">${s.ans.map(([i,o])=>`<li><span class="n"><span class="okx ${o?'o':'x'}">${o?'○':'×'}</span></span><span class="en">${esc(WORDS[i][0])} <small class="pr">${esc(WORDS[i][2])}</small>${starBtn(i)}</span><span class="ko">${esc(WORDS[i][1])}</span></li>`).join('')}</ul></div>
-    <div class="row" style="margin-top:14px"><button class="btn" id="again">다시 테스트</button><button class="btn ghost" id="tofav">즐겨찾기 목록</button></div>`;
+    <div class="row" style="margin-top:14px"><button class="btn" id="again">다시 테스트</button><button class="btn ghost" id="tofav">${s.day?'Day '+s.day+' 단어':'즐겨찾기 목록'}</button></div>`;
   bindBack(); bindStars(app.querySelector('#wl'));
-  app.querySelector('#again').onclick=()=>{ const n=Object.keys(ensureWB(p)).length; if(!n) return screenWrong('n'); startFav(tot<n?tot:0); }; app.querySelector('#tofav').onclick=()=>screenWrong('n');
+  app.querySelector('#again').onclick=()=>{ if(s.day) return startQuiz(shuffle(dayIdx(s.day)), s.label, s.day); const n=Object.keys(ensureWB(p)).length; if(!n) return screenWrong('n'); startFav(tot<n?tot:0); }; app.querySelector('#tofav').onclick=quizBack(s);
 }
 function screenStats(sort){
   const p=prof(); if(!p) return screenLogin(); window.scrollTo(0,0);
@@ -567,6 +570,7 @@ function screenHelp(){
   <h2>3. 채점 규칙</h2><ul><li>뜻이 여러 개면 하나만 맞혀도 정답이에요.</li><li>띄어쓰기는 무시해요.</li><li>모르면 '몰라'라고 적으세요. 오답으로 기록되고 복습에 나와요.</li><li>맞게 썼는데 오답이 나오면 '사실 맞았어요'를 눌러 정답으로 바꿀 수 있어요.</li><li>답을 내면 예문과 해석, 주의할 점(헷갈리는 단어, 같이 쓰는 표현)이 나와요.</li></ul>
   <h2>4. 망각곡선 복습</h2><ul><li>틀린 단어는 다음 날 복습에 가장 먼저 나와요.</li><li>맞힌 단어는 1일, 3일, 7일, 14일, 30일 간격으로 다시 나와요.</li><li>복습 20개는 틀린 단어, 즐겨찾기한 단어(최대 8개, 오래 안 본 것부터), 복습할 때가 된 단어, 자주 틀린 단어 순서로 채워져요.</li></ul>
   <h2>5. 즐겨찾기</h2><ul><li>틀린 단어는 Day와 상관없이 자동으로 즐겨찾기에 모여요.</li><li>맞혔어도 잘 안 외워지는 단어는 ☆를 눌러 직접 추가하세요. 외우기 화면, 테스트 결과, 지난 Day 보기 어디서든 누를 수 있어요.</li><li>자주 틀린 순, 최근 순으로 정렬할 수 있어요.</li><li>다 외웠으면 '외웠어요'로 빼요. 실수로 뺐으면 바로 '되돌리기'를 누르세요.</li><li>'즐겨찾기 테스트'로 즐겨찾기 단어만 따로 시험 볼 수 있어요. 10개, 20개, 전체 중에 고르면 돼요. 맞혀도 자동으로 빠지지 않으니, 다 외웠다 싶은 단어만 ★를 눌러 직접 빼세요.</li></ul>
+  <h2>6-2. 지난 Day 다시 테스트</h2><ul><li>홈의 '지난 Day 단어 보기'에서 끝낸 Day를 누르고 'Day ○ 다시 테스트'를 누르면 그 Day 단어만 다시 시험 볼 수 있어요.</li><li>진도나 하루 2 Day 제한에는 영향이 없고, 틀린 단어는 즐겨찾기와 복습에 반영돼요.</li></ul>
   <h2>6-1. 틀린 횟수 보기</h2><ul><li>홈의 '틀린 횟수 보기'에서 한 번이라도 틀린 단어를 전부 볼 수 있어요. 단어마다 몇 번 틀리고 몇 번 맞혔는지 나와요.</li><li>즐겨찾기에서 뺀 단어도 여기에는 남아 있어요.</li></ul>
   <h2>6. 하루 공부량</h2><ul><li>Day를 끝내면 다음 Day가 바로 열려요. 단, 하루에 최대 2 Day까지만 할 수 있어요.</li><li>중간에 나가도 괜찮아요. 홈에서 '이어서 하기'를 누르면 하던 곳부터 계속돼요.</li></ul>
   
