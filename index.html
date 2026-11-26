@@ -389,14 +389,16 @@ function screenDayList(d){
   const p=prof();
   app.innerHTML = `${back()}<div class="card pop"><div class="qtop"><span class="tag">Day ${d}</span>${p.results[d]?`<button class="chip" id="rr">결과 카드 보기</button>`:''}</div>
     <h1 style="margin-top:10px">Day ${d} 단어</h1><p class="mute">숫자는 지금까지 틀린 횟수예요. 단어를 누르면 뜻이 보여요.</p>
-    ${p.fsession&&p.fsession.day===d?`<button class="btn" id="rt">Day ${d} 다시 테스트 이어서 하기 (${p.fsession.pos}/${p.fsession.q.length})</button>`:`<button class="btn" id="rt">Day ${d} 다시 테스트</button>`}
+    ${p.fsession&&p.fsession.day===d?`<button class="btn" id="rt">재시험 이어서 하기 (${p.fsession.pos}/${p.fsession.q.length})</button><button class="btn ghost" id="rnew" style="margin-top:8px">처음부터 재시험</button><div id="rcf" hidden><p class="warn" style="margin:10px 0 0">진행 중인 재시험(${p.fsession.pos}/${p.fsession.q.length})이 사라져요. 처음부터 다시 볼까요? 이미 푼 문제의 기록은 남아요.</p><div class="row" style="margin-top:8px"><button class="btn" id="ryes">처음부터</button><button class="btn ghost" id="rno">취소</button></div></div>`:`<button class="btn" id="rt">재시험 보기</button>`}
     <p class="mute" style="margin:6px 0 0">진도와 하루 2 Day 제한에는 영향이 없어요. 틀린 단어는 즐겨찾기에 들어가고 복습 기록에도 반영돼요.</p>
     <div class="row" style="margin:10px 0"><button class="btn ghost" id="hd">뜻 가리기</button><button class="btn ghost" id="hm">홈으로</button></div>
     <ul class="words" id="wl">${dayIdx(d).map(i=>{ const w=(p.srs[i]||{}).w||0; return `<li><span class="n" style="${w?'color:var(--ng);font-weight:700':''}">${w||''}</span><span class="en">${esc(WORDS[i][0])} <small class="pr">${esc(WORDS[i][2])}</small>${starBtn(i)}</span><span class="ko">${esc(WORDS[i][1])}</span><span class="exs">${hl(i)}<br><span class="mute">${esc(WORDS[i][4])}</span></span></li>`; }).join('')}</ul></div>`;
   const wl=app.querySelector('#wl'); wl.querySelectorAll('li').forEach(li=>li.onclick=()=>li.classList.toggle('show'));
   app.querySelector('#hd').onclick=e=>{ const on=wl.classList.toggle('hide'); e.target.textContent=on?'뜻 보이기':'뜻 가리기'; };
   app.querySelector('#hm').onclick=screenHome; const rr=app.querySelector('#rr'); if(rr) rr.onclick=()=>screenResult(d); bindBack(); bindStars(wl);
-  app.querySelector('#rt').onclick=()=>{ if(p.fsession&&p.fsession.day===d) return screenFTest(); startQuiz(shuffle(dayIdx(d)), 'Day '+d+' 다시 테스트', d); };
+  const restart=()=>startQuiz(shuffle(dayIdx(d)), 'Day '+d+' 재시험', d);
+  app.querySelector('#rt').onclick=()=>{ if(p.fsession&&p.fsession.day===d) return screenFTest(); restart(); };
+  const rn=app.querySelector('#rnew'); if(rn){ const cf=app.querySelector('#rcf'); rn.onclick=()=>{ cf.hidden=false; rn.hidden=true; }; app.querySelector('#rno').onclick=()=>{ cf.hidden=true; rn.hidden=false; }; app.querySelector('#ryes').onclick=restart; }
   window.scrollTo(0,0);
 }
 
@@ -473,13 +475,14 @@ function screenWrong(sort){
   window.scrollTo(0,0);
   app.innerHTML=`${back()}<div class="card pop"><h1>★ 즐겨찾기</h1>
     <p class="mute">틀린 단어는 자동으로 들어오고, 맞힌 단어도 ☆를 눌러 직접 넣을 수 있어요. 다 외운 단어는 '외웠어요'를 눌러 빼세요. 나중에 또 틀리면 다시 들어와요.</p>
-    ${ids.length?`<div class="ftest"><b>즐겨찾기 테스트</b><span class="mute">맞혀도 자동으로 빠지지 않아요.</span>${p.fsession&&!p.fsession.day?`<button class="btn" id="fres">이어서 하기 (${p.fsession.pos}/${p.fsession.q.length})</button>`:`<div class="chips" style="margin:8px 0 0">${ids.length>10?'<button class="chip ft" data-n="10">10개</button>':''}${ids.length>20?'<button class="chip ft" data-n="20">20개</button>':''}<button class="chip ft" data-n="0">전체 ${ids.length}개</button></div>`}</div>`:''}
+    ${ids.length?`<div class="ftest"><b>즐겨찾기 테스트</b><span class="mute">맞혀도 자동으로 빠지지 않아요.</span>${p.fsession&&!p.fsession.day?`<button class="btn" id="fres">이어서 하기 (${p.fsession.pos}/${p.fsession.q.length})</button><button class="btn ghost" id="fnew" style="margin-top:8px">새로 시작하기</button><div id="fcf" hidden><p class="warn" style="margin:10px 0 0">진행 중인 시험(${p.fsession.pos}/${p.fsession.q.length})이 사라져요. 새로 시작할까요? 이미 푼 문제의 기록은 남아요.</p><div class="row" style="margin-top:8px"><button class="btn" id="fyes">새로 시작</button><button class="btn ghost" id="fno">취소</button></div></div><div id="fch" hidden></div>`:''}<div class="chips" id="fchips" style="margin:8px 0 0" ${p.fsession&&!p.fsession.day?'hidden':''}>${ids.length>10?'<button class="chip ft" data-n="10">10개</button>':''}${ids.length>20?'<button class="chip ft" data-n="20">20개</button>':''}<button class="chip ft" data-n="0">전체 ${ids.length}개</button></div></div>`:''}
     ${ids.length?`<div class="chips"><button class="chip" id="so" style="${sort!=='r'?'border-color:var(--acc);color:var(--acc)':''}">자주 틀린 순</button><button class="chip" id="sr" style="${sort==='r'?'border-color:var(--acc);color:var(--acc)':''}">최근 순</button><button class="chip" id="hd">뜻 가리기</button></div>
     <p class="mute" style="margin:0" id="wc">${ids.length}개</p>
     <ul class="words" id="wl">${ids.map(i=>`<li data-i="${i}"><span class="n"></span><span class="en">${esc(WORDS[i][0])} <small class="pr">${esc(WORDS[i][2])}</small></span><span class="ko">${esc(WORDS[i][1])}</span><span class="exs">${hl(i)}<br><span class="mute">${esc(WORDS[i][4])}</span></span><span class="wb-row">${wb[i][0]?`<span class="cnt">${wb[i][0]}번 틀림</span>`:'<span class="cnt own">직접 추가</span>'}<button class="mini rm">외웠어요</button></span></li>`).join('')}</ul>`
     :'<p style="margin-top:12px"><b>아직 즐겨찾기한 단어가 없어요.</b></p><p class="mute">테스트에서 틀리거나 \'몰라\'라고 쓴 단어, ☆를 누른 단어가 여기에 쌓여요.</p>'}</div>`;
   bindBack();
   app.querySelectorAll('.ft').forEach(b=>b.onclick=()=>startFav(+b.dataset.n)); const fr=app.querySelector('#fres'); if(fr) fr.onclick=screenFTest;
+  const fn=app.querySelector('#fnew'); if(fn){ const cf=app.querySelector('#fcf'); fn.onclick=()=>{ cf.hidden=false; fn.hidden=true; }; app.querySelector('#fno').onclick=()=>{ cf.hidden=true; fn.hidden=false; }; app.querySelector('#fyes').onclick=()=>{ cf.hidden=true; fr.hidden=true; app.querySelector('#fchips').hidden=false; }; }
   if(!ids.length) return;
   const wl=app.querySelector('#wl');
   wl.querySelectorAll('li').forEach(li=>li.onclick=e=>{ if(e.target.closest('.rm')) return; li.classList.toggle('show'); });
@@ -569,8 +572,8 @@ function screenHelp(){
   <h2>2. 하루 공부 흐름</h2><ul><li>외우기: 그날의 새 단어 30개 안팎을 발음, 뜻, 예문과 함께 봐요. '뜻 가리기'를 켜고 단어를 누르면 하나씩 확인할 수 있어요.</li><li>테스트: 영어 단어를 보고 한국어 뜻을 적어요. Day 2부터는 복습 단어 20개가 섞여 나와요.</li><li>결과: 정답률과 틀린 단어가 나와요. 캡처해서 선생님께 보내 주세요.</li></ul>
   <h2>3. 채점 규칙</h2><ul><li>뜻이 여러 개면 하나만 맞혀도 정답이에요.</li><li>띄어쓰기는 무시해요.</li><li>모르면 '몰라'라고 적으세요. 오답으로 기록되고 복습에 나와요.</li><li>맞게 썼는데 오답이 나오면 '사실 맞았어요'를 눌러 정답으로 바꿀 수 있어요.</li><li>답을 내면 예문과 해석, 주의할 점(헷갈리는 단어, 같이 쓰는 표현)이 나와요.</li></ul>
   <h2>4. 망각곡선 복습</h2><ul><li>틀린 단어는 다음 날 복습에 가장 먼저 나와요.</li><li>맞힌 단어는 1일, 3일, 7일, 14일, 30일 간격으로 다시 나와요.</li><li>복습 20개는 틀린 단어, 즐겨찾기한 단어(최대 8개, 오래 안 본 것부터), 복습할 때가 된 단어, 자주 틀린 단어 순서로 채워져요.</li></ul>
-  <h2>5. 즐겨찾기</h2><ul><li>틀린 단어는 Day와 상관없이 자동으로 즐겨찾기에 모여요.</li><li>맞혔어도 잘 안 외워지는 단어는 ☆를 눌러 직접 추가하세요. 외우기 화면, 테스트 결과, 지난 Day 보기 어디서든 누를 수 있어요.</li><li>자주 틀린 순, 최근 순으로 정렬할 수 있어요.</li><li>다 외웠으면 '외웠어요'로 빼요. 실수로 뺐으면 바로 '되돌리기'를 누르세요.</li><li>'즐겨찾기 테스트'로 즐겨찾기 단어만 따로 시험 볼 수 있어요. 10개, 20개, 전체 중에 고르면 돼요. 맞혀도 자동으로 빠지지 않으니, 다 외웠다 싶은 단어만 ★를 눌러 직접 빼세요.</li></ul>
-  <h2>6-2. 지난 Day 다시 테스트</h2><ul><li>홈의 '지난 Day 단어 보기'에서 끝낸 Day를 누르고 'Day ○ 다시 테스트'를 누르면 그 Day 단어만 다시 시험 볼 수 있어요.</li><li>진도나 하루 2 Day 제한에는 영향이 없고, 틀린 단어는 즐겨찾기와 복습에 반영돼요.</li></ul>
+  <h2>5. 즐겨찾기</h2><ul><li>틀린 단어는 Day와 상관없이 자동으로 즐겨찾기에 모여요.</li><li>맞혔어도 잘 안 외워지는 단어는 ☆를 눌러 직접 추가하세요. 외우기 화면, 테스트 결과, 지난 Day 보기 어디서든 누를 수 있어요.</li><li>자주 틀린 순, 최근 순으로 정렬할 수 있어요.</li><li>다 외웠으면 '외웠어요'로 빼요. 실수로 뺐으면 바로 '되돌리기'를 누르세요.</li><li>'즐겨찾기 테스트'로 즐겨찾기 단어만 따로 시험 볼 수 있어요. 10개, 20개, 전체 중에 고르면 돼요. 맞혀도 자동으로 빠지지 않으니, 다 외웠다 싶은 단어만 ★를 눌러 직접 빼세요.</li><li>시험 도중에 나가면 '이어서 하기'로 이어 보거나 '새로 시작하기'로 처음부터 볼 수 있어요.</li></ul>
+  <h2>6-2. 지난 Day 재시험</h2><ul><li>홈의 '지난 Day 단어 보기'에서 끝낸 Day를 누르고 '재시험 보기'를 누르면 그 Day 단어만 다시 시험 볼 수 있어요.</li><li>중간에 나가면 '재시험 이어서 하기'로 이어 보거나 '처음부터 재시험'으로 새로 볼 수 있어요.</li><li>진도나 하루 2 Day 제한에는 영향이 없고, 틀린 단어는 즐겨찾기와 복습에 반영돼요.</li></ul>
   <h2>6-1. 틀린 횟수 보기</h2><ul><li>홈의 '틀린 횟수 보기'에서 한 번이라도 틀린 단어를 전부 볼 수 있어요. 단어마다 몇 번 틀리고 몇 번 맞혔는지 나와요.</li><li>즐겨찾기에서 뺀 단어도 여기에는 남아 있어요.</li></ul>
   <h2>6. 하루 공부량</h2><ul><li>Day를 끝내면 다음 Day가 바로 열려요. 단, 하루에 최대 2 Day까지만 할 수 있어요.</li><li>중간에 나가도 괜찮아요. 홈에서 '이어서 하기'를 누르면 하던 곳부터 계속돼요.</li></ul>
   
