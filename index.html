@@ -131,11 +131,11 @@ function persist(){ try { localStorage.setItem(KEY_C, JSON.stringify(db)); } cat
 let db = load();
 const CFG = window.DAL_CONFIG || {};
 let ver=0, syncing=false, syncTimer=null;
-function save(){ ver++; if(db.auth){ db.dirty=true; } persist(); if(db.auth) schedule(1500); }
+function save(){ ver++; if(db.auth){ db.dirty=true; } persist(); if(db.auth) schedule(400); }
 function schedule(ms){ clearTimeout(syncTimer); syncTimer=setTimeout(syncNow, ms); }
-async function rpc(fn, args){
-  const h={'apikey':CFG.key,'Content-Type':'application/json'}; if(/^eyJ/.test(CFG.key||'')) h.Authorization='Bearer '+CFG.key;
-  const r=await fetch(CFG.url.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(args)});
+async function rpc(fn, args, ka){
+  const body=JSON.stringify(args); const h={'apikey':CFG.key,'Content-Type':'application/json'}; if(/^eyJ/.test(CFG.key||'')) h.Authorization='Bearer '+CFG.key;
+  const r=await fetch(CFG.url.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body,keepalive:!!ka && body.length<60000});
   if(!r.ok) throw new Error('http '+r.status); return r.json();
 }
 function setStatus(s){ const el=document.getElementById('sync'); if(!el) return; const m={ok:'✓ 저장됨',saving:'저장 중…',offline:'오프라인 · 연결되면 저장',err:'저장 오류'}; el.textContent=db.auth?(m[s]||''):''; el.dataset.s=s; }
@@ -150,11 +150,11 @@ function mergeP(a,b){
   if(o.session && o.session.day < o.next && b.next>a.next) o.session=null;
   return o;
 }
-async function syncNow(){
+async function syncNow(ka){
   if(syncing || !db.auth || !db.dirty || !CFG.url) return;
   syncing=true; setStatus('saving'); const v0=ver; const A=db.auth;
   try{
-    let r=await rpc('st_save',{p_name:A.name,p_pin:A.pin,p_data:prof(),p_rev:A.rev});
+    let r=await rpc('st_save',{p_name:A.name,p_pin:A.pin,p_data:prof(),p_rev:A.rev}, ka);
     if(r.error==='conflict'){ db.profiles[A.name]=mergeP(prof(), r.data); r=await rpc('st_save',{p_name:A.name,p_pin:A.pin,p_data:prof(),p_rev:r.rev}); }
     if(r.ok){ A.rev=r.rev; if(ver===v0) db.dirty=false; persist(); setStatus(db.dirty?'saving':'ok'); if(db.dirty) schedule(500); }
     else if(r.error==='wrong_pin' || r.error==='not_found'){ setStatus('err'); }
@@ -163,7 +163,8 @@ async function syncNow(){
   syncing=false;
 }
 window.addEventListener('online', ()=>schedule(300));
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') syncNow(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') syncNow(true); });
+window.addEventListener('pagehide', ()=>syncNow(true));
 setInterval(()=>{ if(db.dirty) syncNow(); }, 30000);
 function showWarn(){}
 
@@ -349,14 +350,16 @@ function screenTest(){
     <form id="f"><input type="text" id="a" placeholder="한국어 뜻" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
     <p class="hint">답을 모르겠으면 '몰라'라고 적어주세요. 띄어쓰기는 무시해요. 뜻이 여러 개면 하나만 맞혀도 정답이에요.</p>
     <div id="fb"></div><button class="btn" id="sb">확인</button></form>
-    <button class="btn ghost" id="ov" style="margin-top:8px" hidden>사실 맞았어요 · 정답 처리</button></div>
+    <button class="btn ghost" id="ov" style="margin-top:8px" hidden>사실 맞았어요 · 정답 처리</button>
+    ${s.ans.length?'<button class="btn ghost" id="pv" style="margin-top:14px">← 이전 문제 보기</button>':''}</div>
     <button class="btn ghost" id="qt" style="margin-top:14px">잠깐 쉬기 (홈으로)</button>`;
   const a=app.querySelector('#a'), fb=app.querySelector('#fb'), sb=app.querySelector('#sb'), ov=app.querySelector('#ov');
   a.focus();
   let judged=null; const st={off:false}; bindPill(i, st);
+  const pv=app.querySelector('#pv'); if(pv) pv.onclick=()=>screenReview('day', s.ans.length-1);
   app.querySelector('#f').onsubmit=e=>{
     e.preventDefault();
-    if(judged===null){
+    if(judged===null){ if(pv) pv.hidden=true;
       const val=a.value.trim(); if(!val){ a.focus(); return; }
       const dk=/^(몰라|모름|모르겠어|모르겠음|모르겠다|몰라요|모르겠어요|\?+)$/.test(val.replace(/\s/g,''));
       judged=dk?false:grade(i,val); a.readOnly=true;
@@ -510,6 +513,25 @@ function toast(msg, undo){
   document.body.appendChild(t); toastT=setTimeout(()=>t.remove(), 4000);
 }
 
+function screenReview(kind, k){
+  const p=prof(), s = kind==='day' ? p.session : p.fsession; if(!s || !s.ans[k]) return kind==='day'?screenTest():screenFTest();
+  const e=s.ans[k], i=e[0], ok = kind==='day'?e[2]:e[1], mine = (kind==='day'?e[3]:e[2])||'';
+  const dk=/^(몰라|모름|모르겠어|모르겠음|모르겠다|몰라요|모르겠어요|\?+)$/.test(mine.replace(/\s/g,''));
+  const tag = kind==='day' ? (e[1]==='n'?'새 단어':'복습') : quizLabel(s);
+  window.scrollTo(0,0);
+  app.innerHTML=`${kind==='day'?back():`<button class="back" id="fbk">← ${s.day?'Day '+s.day+' 단어로':'즐겨찾기로'}</button>`}<div class="card pop"><div class="qtop"><span class="tag ${kind==='day'&&e[1]==='n'?'new':'rev'}">${esc(tag)}</span><span>${k+1} / ${s.q.length} · 이전 문제</span></div>
+    <div class="bar"><i style="width:${k/s.q.length*100}%"></i></div>
+    <div class="qhead">${starPill(i)}</div>
+    <div class="qword" style="margin-top:6px">${esc(WORDS[i][0])}</div><div class="qpr">${esc(WORDS[i][2])}</div>
+    <input type="text" value="${esc(mine)}" readonly aria-label="내가 쓴 답">
+    <div class="fb ${ok?'ok':'ng'}"><strong>${ok?'정답':dk?'모르는 단어':'오답'}</strong>${esc(WORDS[i][1])}${ok||dk||!mine?'':`<div class="mine">내 답: ${esc(mine)}</div>`}</div>${exBlock(i)}
+    <p class="mute" style="margin:0">채점 결과는 바뀌지 않아요. 즐겨찾기만 켜고 끌 수 있어요.</p>
+    <div class="row" style="margin-top:18px"><button class="btn ghost" id="rp" ${k===0?'disabled':''}>← 이전</button><button class="btn" id="rn">${k+1<s.ans.length?'다음 →':'풀던 문제로 →'}</button></div></div>`;
+  const b=app.querySelector('#sp'); b.onclick=()=>{ const on=toggleStar(i); b.classList.toggle('on',on); b.textContent=on?'★ 즐겨찾기됨':'☆ 즐겨찾기'; };
+  app.querySelector('#rp').onclick=()=>screenReview(kind,k-1);
+  app.querySelector('#rn').onclick=()=> k+1<s.ans.length ? screenReview(kind,k+1) : (kind==='day'?screenTest():screenFTest());
+  if(kind==='day') bindBack(); else app.querySelector('#fbk').onclick=quizBack(s);
+}
 function startFav(n){ const ids=shuffle(Object.keys(ensureWB(prof())).map(Number)); startQuiz(n?ids.slice(0,n):ids, '★ 즐겨찾기 테스트', 0); }
 function startQuiz(q,label,day){ const p=prof(); p.fsession={q, pos:0, ans:[], label, day}; save(); window.scrollTo(0,0); screenFTest(); }
 const quizLabel = s => s.label || '★ 즐겨찾기 테스트';
@@ -525,11 +547,13 @@ function screenFTest(){
     <form id="f"><input type="text" id="a" placeholder="한국어 뜻" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
     <p class="hint">답을 모르겠으면 '몰라'라고 적어주세요. 띄어쓰기는 무시해요.</p>
     <div id="fb"></div><button class="btn" id="sb">확인</button></form>
-    <button class="btn ghost" id="ov" style="margin-top:8px" hidden>사실 맞았어요 · 정답 처리</button></div>`;
+    <button class="btn ghost" id="ov" style="margin-top:8px" hidden>사실 맞았어요 · 정답 처리</button>
+    ${s.ans.length?'<button class="btn ghost" id="pv" style="margin-top:14px">← 이전 문제 보기</button>':''}</div>`;
   const a=app.querySelector('#a'), fb=app.querySelector('#fb'), sb=app.querySelector('#sb'), ov=app.querySelector('#ov');
   a.focus(); let judged=null; const st={off:false}; bindPill(i, st);
+  const pv=app.querySelector('#pv'); if(pv) pv.onclick=()=>screenReview('quiz', s.ans.length-1);
   app.querySelector('#f').onsubmit=e=>{ e.preventDefault();
-    if(judged===null){
+    if(judged===null){ if(pv) pv.hidden=true;
       const val=a.value.trim(); if(!val){ a.focus(); return; }
       const dk=/^(몰라|모름|모르겠어|모르겠음|모르겠다|몰라요|모르겠어요|\?+)$/.test(val.replace(/\s/g,''));
       judged=dk?false:grade(i,val); a.readOnly=true;
@@ -539,7 +563,7 @@ function screenFTest(){
       return;
     }
 
-    s.ans.push([i,judged?1:0]); applyResult(p,i,judged); if(st.off) delete p.wb[i];
+    s.ans.push([i,judged?1:0,a.value.trim()]); applyResult(p,i,judged); if(st.off) delete p.wb[i];
     s.pos++; save(); screenFTest();
   };
   app.querySelector('#fbk').onclick=quizBack(s);
