@@ -28,7 +28,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;ma
 .hr{display:flex;gap:14px;align-items:center}
 .sync{font-size:12px;color:var(--ok)}.sync[data-s=offline],.sync[data-s=err]{color:var(--ng)}.sync[data-s=saving]{color:var(--mute)}
 @media(max-width:400px){.sync{display:none}}
-.pin{letter-spacing:.4em;font-size:22px!important;text-align:center}
+.pin{letter-spacing:.4em;font-size:22px!important;text-align:center;width:100%;max-width:100%}
 .back{background:none;border:0;color:var(--acc);font:700 15px "Noto Sans KR",sans-serif;padding:10px 0;margin:-6px 0 8px;cursor:pointer;min-height:44px}
 .wb-row{display:flex;justify-content:space-between;align-items:center;gap:8px;grid-column:2;margin-top:6px}
 .star{background:none;border:0;font-size:22px;line-height:1;color:var(--mute);cursor:pointer;padding:4px 6px;vertical-align:middle;min-width:36px;min-height:36px}
@@ -53,7 +53,7 @@ p{margin:0 0 10px}.mute{color:var(--mute);font-size:14px}
 .btn:disabled{opacity:.4;cursor:default}
 .btn:focus-visible,input:focus-visible,.who:focus-visible,.day:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
-input[type=text],textarea{width:100%;font:16px "Noto Sans KR",sans-serif;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=text],input[type=password],textarea{width:100%;font:16px "Noto Sans KR",sans-serif;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 textarea{min-height:96px;font-size:13px;resize:vertical;word-break:break-all}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
 .stat{background:var(--bg);border-radius:12px;padding:10px 12px}
