@@ -34,6 +34,10 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;ma
 .star{background:none;border:0;font-size:22px;line-height:1;color:var(--mute);cursor:pointer;padding:4px 6px;vertical-align:middle;min-width:36px;min-height:36px}
 .star.on{color:#e0a000}
 .cnt.own{color:var(--acc);background:var(--bg)}
+.qhead{display:flex;justify-content:flex-end;margin-top:14px}
+.spill{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--mute);font:700 14px "Noto Sans KR",sans-serif;cursor:pointer}
+.spill.on{color:#e0a000;border-color:#e0a000}
+#sb{margin-top:18px}
 .ftest{background:var(--bg);border-radius:14px;padding:14px;margin:12px 0}.ftest b{display:block;font-size:16px}.ftest .btn{margin-top:10px}
 .okx{font-weight:700;margin-right:6px}.okx.o{color:var(--ok)}.okx.x{color:var(--ng)}
 .cnt{font-size:12px;font-weight:700;color:var(--ng);background:var(--ngbg);border-radius:20px;padding:3px 9px}
@@ -211,8 +215,10 @@ function applyResult(p, i, ok){
   p.srs[i] = s;
 }
 function ensureWB(p){ if(!p.wb){ p.wb={}; for(const [i,s] of Object.entries(p.srs)) if(s.w>0) p.wb[i]=[s.w, s.due-1]; } return p.wb; }
-function starBtn(i){ const on=!!ensureWB(prof())[i]; return `<button class="star${on?' on':''}" data-s="${i}" aria-label="즐겨찾기">${on?'★':'☆'}</button>`; }
+function starBtn(i){ const on=!!ensureWB(prof())[i]; return `<button type="button" class="star${on?' on':''}" data-s="${i}" aria-label="즐겨찾기">${on?'★':'☆'}</button>`; }
 function toggleStar(i){ const wb=ensureWB(prof()); if(wb[i]) delete wb[i]; else wb[i]=[0,today()]; save(); return !!wb[i]; }
+function starPill(i){ const on=!!ensureWB(prof())[i]; return `<button type="button" class="spill${on?' on':''}" id="sp" data-s="${i}">${on?'★ 즐겨찾기됨':'☆ 즐겨찾기'}</button>`; }
+function bindPill(i, st){ const b=app.querySelector('#sp'); if(!b) return; b.onclick=e=>{ e.preventDefault(); const on=toggleStar(i); st.off=!on; b.classList.toggle('on',on); b.textContent=on?'★ 즐겨찾기됨':'☆ 즐겨찾기'; }; }
 function bindStars(root){ root.querySelectorAll('.star').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const on=toggleStar(b.dataset.s); b.classList.toggle('on',on); b.textContent=on?'★':'☆'; }); }
 const back = () => '<button class="back" id="bkh">← 홈으로</button>';
 function bindBack(){ const b=app.querySelector('#bkh'); if(b) b.onclick=()=>{ window.scrollTo(0,0); screenHome(); }; }
@@ -338,7 +344,8 @@ function screenTest(){
   const [i,kind]=s.q[s.pos];
   app.innerHTML = `${back()}<div class="card pop"><div class="qtop"><span class="tag ${kind==='n'?'new':'rev'}">${kind==='n'?'새 단어':(ensureWB(p)[i]?'★ 복습':'복습')}</span><span>${s.pos+1} / ${s.q.length}</span></div>
     <div class="bar"><i style="width:${s.pos/s.q.length*100}%"></i></div>
-    <div class="qword">${esc(WORDS[i][0])}</div><div class="qpr">${esc(WORDS[i][2])}</div>
+    <div class="qhead">${starPill(i)}</div>
+    <div class="qword" style="margin-top:6px">${esc(WORDS[i][0])}</div><div class="qpr">${esc(WORDS[i][2])}</div>
     <form id="f"><input type="text" id="a" placeholder="한국어 뜻" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
     <p class="hint">답을 모르겠으면 '몰라'라고 적어주세요. 띄어쓰기는 무시해요. 뜻이 여러 개면 하나만 맞혀도 정답이에요.</p>
     <div id="fb"></div><button class="btn" id="sb">확인</button></form>
@@ -346,19 +353,19 @@ function screenTest(){
     <button class="btn ghost" id="qt" style="margin-top:14px">잠깐 쉬기 (홈으로)</button>`;
   const a=app.querySelector('#a'), fb=app.querySelector('#fb'), sb=app.querySelector('#sb'), ov=app.querySelector('#ov');
   a.focus();
-  let judged=null;
+  let judged=null; const st={off:false}; bindPill(i, st);
   app.querySelector('#f').onsubmit=e=>{
     e.preventDefault();
     if(judged===null){
       const val=a.value.trim(); if(!val){ a.focus(); return; }
       const dk=/^(몰라|모름|모르겠어|모르겠음|모르겠다|몰라요|모르겠어요|\?+)$/.test(val.replace(/\s/g,''));
       judged=dk?false:grade(i,val); a.readOnly=true;
-      fb.innerHTML=`<div class="fb ${judged?'ok':'ng'}"><strong>${judged?'정답':dk?'모르는 단어':'오답'}</strong>${esc(WORDS[i][1])}${judged||dk?'':`<div class="mine">내 답: ${esc(val)}</div>`}</div>${exBlock(i)}${judged?`<p class="mute" style="margin:0 0 10px">${starBtn(i)} 맞혔지만 헷갈리면 즐겨찾기</p>`:'<p class="mute" style="margin:0 0 10px">틀린 단어는 자동으로 즐겨찾기에 들어가요.</p>'}`;
-      bindStars(fb); sb.textContent='다음'; ov.hidden=judged||dk; a.focus();
+      fb.innerHTML=`<div class="fb ${judged?'ok':'ng'}"><strong>${judged?'정답':dk?'모르는 단어':'오답'}</strong>${esc(WORDS[i][1])}${judged||dk?'':`<div class="mine">내 답: ${esc(val)}</div>`}</div>${exBlock(i)}${judged?'<p class="mute" style="margin:0">맞혔지만 헷갈리면 위의 ☆를 눌러 즐겨찾기하세요.</p>':'<p class="mute" style="margin:0">틀린 단어는 자동으로 즐겨찾기에 들어가요. 빼고 싶으면 위의 ★를 누르세요.</p>'}`;
+      sb.textContent='다음'; ov.hidden=judged||dk; a.focus();
       ov.onclick=()=>{ judged=true; ov.hidden=true; fb.querySelector('.fb').className='fb ok'; fb.querySelector('strong').textContent='정답 처리됨'; a.focus(); };
       return;
     }
-    s.ans.push([i,kind,judged?1:0,a.value.trim()]); applyResult(p,i,judged); s.pos++; save(); screenTest();
+    s.ans.push([i,kind,judged?1:0,a.value.trim()]); applyResult(p,i,judged); if(st.off) delete p.wb[i]; s.pos++; save(); screenTest();
   };
   app.querySelector('#qt').onclick=screenHome; bindBack();
 }
@@ -513,25 +520,26 @@ function screenFTest(){
   const i=s.q[s.pos];
   app.innerHTML = `<button class="back" id="fbk">← ${s.day?'Day '+s.day+' 단어로':'즐겨찾기로'}</button><div class="card pop"><div class="qtop"><span class="tag rev">${esc(quizLabel(s))}</span><span>${s.pos+1} / ${s.q.length}</span></div>
     <div class="bar"><i style="width:${s.pos/s.q.length*100}%"></i></div>
-    <div class="qword">${esc(WORDS[i][0])}</div><div class="qpr">${esc(WORDS[i][2])}</div>
+    <div class="qhead">${starPill(i)}</div>
+    <div class="qword" style="margin-top:6px">${esc(WORDS[i][0])}</div><div class="qpr">${esc(WORDS[i][2])}</div>
     <form id="f"><input type="text" id="a" placeholder="한국어 뜻" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
     <p class="hint">답을 모르겠으면 '몰라'라고 적어주세요. 띄어쓰기는 무시해요.</p>
     <div id="fb"></div><button class="btn" id="sb">확인</button></form>
     <button class="btn ghost" id="ov" style="margin-top:8px" hidden>사실 맞았어요 · 정답 처리</button></div>`;
   const a=app.querySelector('#a'), fb=app.querySelector('#fb'), sb=app.querySelector('#sb'), ov=app.querySelector('#ov');
-  a.focus(); let judged=null;
+  a.focus(); let judged=null; const st={off:false}; bindPill(i, st);
   app.querySelector('#f').onsubmit=e=>{ e.preventDefault();
     if(judged===null){
       const val=a.value.trim(); if(!val){ a.focus(); return; }
       const dk=/^(몰라|모름|모르겠어|모르겠음|모르겠다|몰라요|모르겠어요|\?+)$/.test(val.replace(/\s/g,''));
       judged=dk?false:grade(i,val); a.readOnly=true;
-      fb.innerHTML=`<div class="fb ${judged?'ok':'ng'}"><strong>${judged?'정답':dk?'모르는 단어':'오답'}</strong>${esc(WORDS[i][1])}${judged||dk?'':`<div class="mine">내 답: ${esc(val)}</div>`}</div>${exBlock(i)}<p class="mute" style="margin:0 0 10px">${starBtn(i)} ${s.day?(judged?'헷갈리면 ☆를 눌러 즐겨찾기':'틀린 단어는 자동으로 즐겨찾기에 들어가요'):'다 외웠으면 ★를 눌러 즐겨찾기에서 빼세요'}</p>`;
-      bindStars(fb); sb.textContent='다음'; ov.hidden=judged||dk; a.focus();
+      fb.innerHTML=`<div class="fb ${judged?'ok':'ng'}"><strong>${judged?'정답':dk?'모르는 단어':'오답'}</strong>${esc(WORDS[i][1])}${judged||dk?'':`<div class="mine">내 답: ${esc(val)}</div>`}</div>${exBlock(i)}<p class="mute" style="margin:0">${s.day?(judged?'헷갈리면 위의 ☆를 눌러 즐겨찾기하세요.':'틀린 단어는 자동으로 즐겨찾기에 들어가요. 빼고 싶으면 위의 ★를 누르세요.'):'다 외웠으면 위의 ★를 눌러 즐겨찾기에서 빼세요.'}</p>`;
+      sb.textContent='다음'; ov.hidden=judged||dk; a.focus();
       ov.onclick=()=>{ judged=true; ov.hidden=true; fb.querySelector('.fb').className='fb ok'; fb.querySelector('strong').textContent='정답 처리됨'; a.focus(); };
       return;
     }
 
-    s.ans.push([i,judged?1:0]); applyResult(p,i,judged);
+    s.ans.push([i,judged?1:0]); applyResult(p,i,judged); if(st.off) delete p.wb[i];
     s.pos++; save(); screenFTest();
   };
   app.querySelector('#fbk').onclick=quizBack(s);
